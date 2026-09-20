@@ -1,0 +1,14 @@
+{
+  "recommendations": [
+    "openai.chatgpt",
+    "ms-python.python",
+    "ms-python.vscode-pylance",
+    "charliermarsh.ruff",
+    "dbaeumer.vscode-eslint",
+    "esbenp.prettier-vscode",
+    "ms-playwright.playwright",
+    "ms-azuretools.vscode-docker",
+    "qwtel.sqlite-viewer"
+  ]
+}
+
