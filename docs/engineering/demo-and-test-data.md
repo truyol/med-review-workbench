@@ -37,7 +37,7 @@ powershell -ExecutionPolicy Bypass -File .\scripts\reset-demo.ps1
 
 - 项目：`Demo - SHD preoperative asset review`
 - 病例：`DEMO-TAVR-001`
-- 素材：合成 PNG（已通过评审）、DICOM、STL。全新克隆 seed 使用仓库内有 CC BY 4.0 署名的心脏参考 STL，并在缺少本地清理 DICOM 时生成非临床 phantom；仅当心脏 STL 文件缺失时回退到合成曲管。本地提供清理 DICOM 时优先读取；题目 `aorta.stl` 需手动上传，不再作为默认 seed。已有演示库再次 seed 会新增心脏素材，不会删除旧曲管或 `aorta.stl`，录屏时请确认选择“心脏参考模型”标签的素材。
+- 素材：合成 PNG（已通过评审）、DICOM、STL。全新克隆 seed 直接读取仓库内三份素材：合成 PNG、已脱敏的公开 CT DICOM（`sample-data/dicom/CT_small_anonymized.dcm`，pydicom `CT_small.dcm` 的 MIT 许可清理副本）和有 CC BY 4.0 署名的心脏参考 STL；仅当对应文件缺失时，才回退到非临床 phantom / 合成曲管。题目 `aorta.stl` 需手动上传，不再作为默认 seed。已有演示库再次 seed 会新增心脏素材，不会删除旧曲管或 `aorta.stl`，录屏时请确认选择“心脏参考模型”标签的素材。
 
 容器内 seed 通过只读挂载 `../sample-data:/sample-data:ro` 读取样例，命令：
 

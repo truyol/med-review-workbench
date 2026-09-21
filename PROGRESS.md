@@ -21,10 +21,10 @@
 
 - 使用小型单仓库；开发期使用 SQLite，本地文件系统保存素材；生产演进目标为 PostgreSQL。
 - 演示与测试使用**隔离的 Compose 环境**：演示栈 `med-review-workbench`（端口 8080），门禁栈 `medreview-p8-gate`（端口 18080，用完连卷销毁）。规范见 `docs/engineering/demo-and-test-data.md`。
-- 演示库重置入口：`scripts/reset-demo.ps1`；全新克隆由 seed 生成非临床 DICOM phantom，并读取仓库内有 CC BY 4.0 署名的心脏参考 STL，不依赖私有 `DEMO SET`。STL 缺失时才回退到合成曲管。
+- 演示库重置入口：`scripts/reset-demo.ps1`；全新克隆由 seed 读取仓库内已脱敏的公开 CT DICOM（pydicom `CT_small.dcm` 清理副本）和有 CC BY 4.0 署名的心脏参考 STL，不依赖私有 `DEMO SET`；仅在文件缺失时才回退到非临床 phantom / 合成曲管。
 - 宿主机数据库与容器卷不可混用（预览/模型记录创建时的绝对路径）。
 - 面试题要求的图片浏览/筛选/比较/整理已作为 Must 实现，样例为两张可提交的非临床合成 PNG。
-- DICOM 演示使用 `prepare-dicom-samples.py` 生成的本地清理副本，原始样例不直接进入应用或演示。
+- DICOM 演示使用随仓库提交的 `sample-data/dicom/CT_small_anonymized.dcm`（由 `prepare-dicom-samples.py` scrub v2 生成），原始样例不进入 Git、也不直接进入应用或演示。
 
 ## 当前门禁
 

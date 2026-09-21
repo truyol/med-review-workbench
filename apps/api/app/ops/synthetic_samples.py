@@ -1,4 +1,4 @@
-"""Deterministic, non-clinical fallbacks for a fresh-clone demonstration."""
+"""Deterministic, non-clinical fallbacks used only when bundled sample files are missing."""
 
 from __future__ import annotations
 

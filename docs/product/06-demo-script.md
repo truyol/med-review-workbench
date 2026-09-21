@@ -16,19 +16,19 @@
 - 脱敏病例：`DEMO-TAVR-001`
 - 图片基线：`sample-data/image/synthetic-cardiac-ct-baseline.png`
 - 图片标注对照：`sample-data/image/synthetic-cardiac-ct-annotated.png`
-- DICOM 默认演示：seed 生成的非临床 64×64 phantom；可选替换为本地清理的 `CT_small_anonymized.dcm`
-- 3D 默认演示：仓库内 [CC BY 4.0 心脏参考 STL](../../sample-data/stl/ATTRIBUTION.md)；它与下述 DICOM phantom 无病例对应关系。题目 `aorta.stl` 可选手动上传
+- DICOM 默认演示：仓库内已脱敏的公开 CT DICOM（`sample-data/dicom/CT_small_anonymized.dcm`）；仅在文件缺失时 seed 才回退到非临床 64×64 phantom
+- 3D 默认演示：仓库内 [CC BY 4.0 心脏参考 STL](../../sample-data/stl/ATTRIBUTION.md)；它与上述 CT 无病例对应关系。题目 `aorta.stl` 可选手动上传
 - 96 帧 Rubo DICOM 和 `LA.stl`：只在面试官另行取得并按 README 准备后作为进阶展示，不属于全新克隆的默认素材
 
 ## 演示步骤
 
 1. 打开系统，进入 Demo 项目。
 2. 创建或打开脱敏病例 `DEMO-TAVR-001`。
-3. 确认 seed 已关联合成 PNG、非临床 DICOM phantom 和心脏参考 STL；上传第二张合成 PNG 用于图片比较。
+3. 确认 seed 已关联合成 PNG、已脱敏 CT DICOM 和心脏参考 STL；上传第二张合成 PNG 用于图片比较。
 4. 浏览图片缩略图，按图片类型/待评审状态筛选，选择基线图和标注图并排比较。
 5. 给图片添加标签、状态和备注，证明“整理”结果可保存。
-6. 查看 DICOM phantom 的白名单元数据和缩略图，强调它没有真实患者来源；可选展示另行准备的清理 DICOM。
-7. 打开心脏参考 STL，进行旋转、缩放、平移和复位；说明其来源、CC BY 4.0 许可及“非当前 DICOM 病例重建”的边界。如准备了题目 `aorta.stl`，也可手动上传比较。
+6. 查看 CT DICOM 的白名单元数据和缩略图，说明它是公开测试数据的脱敏副本、无患者身份；可选展示另行准备的 Rubo 96 帧样例。
+7. 打开心脏参考 STL，进行旋转、缩放、平移和复位；说明其来源、CC BY 4.0 许可及“非当前 CT 病例重建”的边界。如准备了题目 `aorta.stl`，也可手动上传比较。
 8. 点击模型放置结构标记、填写结构名称，刷新后检查标记持久化。
 9. 将素材评审为“通过”或“需补充”，前端状态映射为 `accepted` / `needs_changes`。
 10. 填写评审结论：状态、文本、评审人；刷新页面，确认图片整理结果和评审结论仍然存在。

@@ -5,7 +5,7 @@
 ## 交付物与范围
 
 - [x] 公开 GitHub 仓库包含代码、README、PRD、技术设计、运维手册、测试报告、演示脚本、截图、两张非临床合成 PNG 和一份有 CC BY 4.0 署名的心脏参考 STL。
-- [x] Git 不含数据库、上传文件、原始 DICOM、题目提供的 STL、`.env`、虚拟环境或 `node_modules`；全新克隆的 seed 会生成非临床 DICOM phantom 并读取心脏参考 STL。
+- [x] Git 不含数据库、上传文件、原始 DICOM、题目提供的 STL、`.env`、虚拟环境或 `node_modules`；全新克隆的 seed 读取仓库内已脱敏的公开 CT DICOM 与心脏参考 STL，仅在文件缺失时才生成非临床 phantom / 曲管。
 - [x] 面试题能力逐项映射和已知范围差异见 `docs/product/13-delivery-readiness.md`，不把原型说成临床系统。
 - [x] 根 README 给出面试官可复制的 Compose 启动、seed 和停止命令。
 - [x] 最新完整 P8 门禁：API 31 / 92%、组件 3、Playwright 8、隐私日志扫描 131 行零命中、依赖审计通过；心脏 STL 哈希与解析测试通过，详见 `docs/product/12-p8-test-report.md` 第 12 节。
@@ -24,7 +24,7 @@
 ## 授权与诚实披露
 
 - [x] 当前未添加 `LICENSE`：公开可供面试评估，但不等于授予第三方通用二次使用许可。是否采用 MIT 等许可证由仓库所有者决定。
-- [x] 外部 DICOM 与题目 STL 不随 Git 再分发；仅单独入库并署名 CC BY 4.0 心脏参考 STL。默认 DICOM phantom 与 PNG 为工程合成样例，心脏模型不是其病例重建。
+- [x] 外部原始 DICOM 与题目 STL 不随 Git 再分发；入库的是 pydicom MIT 许可的已脱敏 CT 副本、两张合成 PNG 与署名 CC BY 4.0 的心脏参考 STL。心脏模型不是该 CT 的病例重建。
 - [x] 真实鉴权、持久化审计表、reprocess、标注批量编辑与 PostgreSQL 生产验证尚未实现或完成，见 README 与交付复核文档。
 
 只有上面的实机复核和人工演示完成后，P10 才能标记为“收口完成”。

@@ -29,7 +29,7 @@ docker compose -f .\deploy\docker-compose.yml exec -T api `
   python -m app.ops.seed_demo --sample-root /sample-data
 ```
 
-全新克隆无需额外素材下载：缺少本地清理 DICOM 时，seed 会生成非临床 DICOM phantom，同时使用仓库中的合成 PNG 与有 CC BY 4.0 署名的心脏参考 STL。心脏参考模型不是 DICOM 病例重建。若需展示题目给出的 STL，按 README 准备后在页面手动上传；特定开源 DICOM 清理后可在 seed 前放入 `sample-data/`。重复 seed 不会删除已有素材，因此升级了模型的旧演示库可能同时有旧曲管/主动脉与新心脏，录屏时请选“心脏参考模型”。
+全新克隆无需额外素材下载：seed 使用仓库中已脱敏的公开 CT DICOM（pydicom `CT_small.dcm` 的 MIT 许可清理副本）、合成 PNG 与有 CC BY 4.0 署名的心脏参考 STL；仅当这些文件缺失时才生成非临床 DICOM phantom / 曲管。心脏参考模型不是该 CT 的病例重建。若需展示题目给出的 STL，按 README 准备后在页面手动上传；特定开源 DICOM（如 Rubo）清理后可在 seed 前放入 `sample-data/`。重复 seed 不会删除已有素材，因此升级了模型的旧演示库可能同时有旧曲管/主动脉与新心脏，录屏时请选“心脏参考模型”。
 
 宿主机开发模式仍使用 `scripts/seed-demo.py` 和 `apps/api/var/medreview.db`。两者用途和数据库路径不同，不能用宿主机 seed 代替容器 seed。
 

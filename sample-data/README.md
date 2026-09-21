@@ -1,6 +1,6 @@
 # Sample Data Register
 
-最后更新：2026-09-21
+最后更新：2026-09-22
 
 示例数据必须记录：数据集/页面名称、来源链接、格式、许可或使用条件、获取日期、使用范围、文件哈希和去标识化说明。
 
@@ -8,26 +8,24 @@
 
 ## 全新克隆的默认演示素材
 
-Git 中包含下方登记的两张合成 PNG 和一份经来源、许可核对的 CC BY 4.0 心脏参考 STL。`seed_demo` 默认读取仓库内的 `vh-f-heart.stl`；没有本地 `CT_small_anonymized.dcm` 时，由 `apps/api/app/ops/synthetic_samples.py` **确定性地生成**：
+Git 中包含下方登记的两张合成 PNG、一份**已脱敏的公开 CT DICOM**（pydicom `CT_small.dcm` 的清理副本）和一份经来源、许可核对的 CC BY 4.0 心脏参考 STL。全新克隆的 `seed_demo` 直接读取仓库内这三份素材，**无需额外下载**。
 
-- 64×64 单帧、无患者来源的 DICOM 圆形 phantom；没有 PatientName/PatientID，`BodyPartExamined=PHANTOM`。
+`apps/api/app/ops/synthetic_samples.py` 只在仓库素材缺失的开发环境中作为**确定性兜底**：缺 DICOM 时生成 64×64 单帧、无患者来源的圆形 phantom（没有 PatientName/PatientID，`BodyPartExamined=PHANTOM`）；缺心脏 STL 时生成小型合成曲管。这些兜底不是默认演示模型，也不应作为面试演示的首选。
 
-只有当仓库内的心脏 STL 也缺失时，seed 才回退到小型合成曲管 STL。这个回退只用于缺失文件的开发环境，不能称为默认演示模型。
-
-生成内容写入应用的持久化素材目录，不写回只读 `sample-data/`。全新克隆执行 README 的两条 Docker 命令即可看到三类素材。心脏参考 STL 与合成 DICOM phantom 不是同一病例、不能混称为患者解剖重建；本地准备了清理 DICOM 时，seed 会优先读取它。题目 STL 仍只供手动上传演示，不随仓库分发。
+生成内容写入应用的持久化素材目录，不写回只读 `sample-data/`。全新克隆执行 README 的两条 Docker 命令即可看到三类素材。心脏参考 STL 与 CT 清理副本不是同一病例、不能混称为患者解剖重建。题目 STL 仍只供手动上传演示，不随仓库分发。
 
 ## DICOM
 
-原始样例和生成的清理副本均默认不进入 Git。应用与演示只使用 `*_anonymized` 清理副本；原始文件仅作为可复现输入。
+原始样例默认不进入 Git。pydicom `CT_small.dcm` 是 MIT 许可的公开测试数据，其清理副本 `CT_small_anonymized.dcm` **随仓库提交**，作为全新克隆的默认 DICOM 演示素材；Rubo 样例的使用条件禁止再分发，其原始与清理副本都仅留在本地。应用与演示只使用 `*_anonymized` 清理副本；原始文件仅作为可复现输入。
 
-| 本地文件 | 来源与使用条件 | 获取日期 | 格式/说明 | SHA256 | 去标识化状态与用途 |
+| 文件（Git 状态） | 来源与使用条件 | 获取日期 | 格式/说明 | SHA256 | 去标识化状态与用途 |
 |---|---|---|---|---|---|
 | `sample-data/dicom/CT_small.dcm` | [pydicom `CT_small.dcm`](https://github.com/pydicom/pydicom/blob/main/src/pydicom/data/test_files/CT_small.dcm)；仓库为 [MIT License](https://github.com/pydicom/pydicom/blob/main/LICENSE)，保留许可说明，仅用于测试 | 2026-09-20 | CT, 128x128, Explicit VR Little Endian | `3DD31E5CC835B3F2CDD46C9DA1982F59251E78518FEFA8163D914631C66437D6` | 原文件含已填充的演示身份标签，禁止直接进入应用或演示 |
-| `sample-data/dicom/CT_small_anonymized.dcm` | 由上项通过 `scripts/prepare-dicom-samples.py` 本地生成 | 2026-09-20 | CT 清理副本 | `533A5C9D9F0EEA64B3E420BB0124827189200E25CF54EE850B349EC326EA03D7` | 直接身份标签已清空、私有标签已删除、UID 已确定性替换；用于解析、白名单元数据和缩略图 |
+| `sample-data/dicom/CT_small_anonymized.dcm`（**随仓库提交**） | 由上项通过 `scripts/prepare-dicom-samples.py`（scrub v2）确定性生成；pydicom 为 MIT 许可，允许再分发 | 2026-09-20 | CT 清理副本, 128x128 | `FA9BFB06073C3410B01BD9279027847D34013009E9ABFCE64FE598EC6B058BBD` | 直接身份标签、`OtherPatientIDsSequence`、设备/来源字段（`StationName`、`TimezoneOffsetFromUTC`、来源 AE）与私有标签均已删除，UID 已确定性替换；全新克隆的默认 DICOM 演示素材，用于解析、白名单元数据和缩略图 |
 | `sample-data/dicom/rubo_angiogram_0002/0002.DCM` | [Rubo Sample DICOM files](https://www.rubomedical.com/dicom_files/)；页面声明用于 DICOM Viewer 评价，遵循其 [EULA](https://www.rubomedical.com/help/DicomViewer/Html/License_Terms.html)，不随仓库再分发 | 2026-09-20 | XA, 512x512, 96 frames, 多帧单文件 | `EE1FCF71FECB6A8AEE3B1219388CC7DED40A804056A7647674BA1A77B797AE8E` | 原文件含已填充身份标签，禁止直接进入应用或演示 |
-| `sample-data/dicom/rubo_angiogram_0002/0002_anonymized.DCM` | 由上项通过 `scripts/prepare-dicom-samples.py` 本地生成；仅作本地评价 | 2026-09-20 | XA 清理副本，96 帧 | `0D0A4FE9E42D3CAF90864EF579735A01475F87AB4594BF01D31399BD62BFF6B3` | 直接身份标签已清空、私有标签已删除、UID 已确定性替换；用于多帧与压缩解码边界演示 |
+| `sample-data/dicom/rubo_angiogram_0002/0002_anonymized.DCM` | 由上项通过 `scripts/prepare-dicom-samples.py`（scrub v2）本地生成；仅作本地评价，不随仓库分发 | 2026-09-20 | XA 清理副本，96 帧 | `D35FC4141B74295D23DF33643B15E2A7B8AA496D3F85B09E3F62E1B42887B08F` | 直接身份标签、`OtherPatientIDsSequence`、设备与来源字段、私有标签均已删除，UID 已确定性替换；用于多帧与压缩解码边界演示 |
 
-`prepare-dicom-samples.py` 是 demo 头字段清理工具，不等同于临床级 DICOM 去标识化。它不证明像素中不存在烧录文字；交付前仍需人工检查预览。产品页面仅展示白名单元数据。
+`prepare-dicom-samples.py`（scrub v2）是 demo 头字段清理工具，不等同于临床级 DICOM 去标识化。它会删除直接身份标签、含 PatientID 的 `OtherPatientIDsSequence`、设备/来源字段（`StationName`、`TimezoneOffsetFromUTC`、来源 AE）与私有标签，并确定性替换 UID；但它不证明像素中不存在烧录文字，交付前仍需人工检查预览。产品页面仅展示白名单元数据。
 
 ## STL
 

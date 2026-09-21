@@ -30,6 +30,7 @@ sample-data/dicom/*
 sample-data/image/*
 sample-data/stl/*
 !sample-data/**/.gitkeep
+!sample-data/dicom/CT_small_anonymized.dcm
 !sample-data/image/synthetic-cardiac-ct-baseline.png
 !sample-data/image/synthetic-cardiac-ct-annotated.png
 !sample-data/stl/vh-f-heart.stl

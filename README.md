@@ -15,7 +15,7 @@ docker compose -f deploy/docker-compose.yml exec -T api python -m app.ops.seed_d
 
 打开 `http://localhost:8080`，进入 `Demo - SHD preoperative asset review` → `DEMO-TAVR-001`。首次拉取基础镜像需要网络；已安装的 Docker 镜像可被复用。停止服务用 `docker compose -f deploy/docker-compose.yml down`，不要加 `-v`，否则会删除演示数据库和上传素材。
 
-公开仓库包含两张非临床合成 PNG 和一份 [CC BY 4.0 心脏参考 STL](sample-data/stl/ATTRIBUTION.md)。seed 默认读取这份 STL；缺少本地清理 DICOM 时，会自动生成无患者来源的 64×64 DICOM phantom。因此全新克隆无需额外下载，就能演示图片、DICOM 和 3D。心脏 STL 不是这个 DICOM 的患者重建；题目附带的 STL 仍需另行取得、手动上传，且不进入 Git。所有演示素材都不用于医疗判断。
+公开仓库包含两张非临床合成 PNG、一份[已脱敏的公开 CT DICOM](sample-data/README.md)（pydicom `CT_small.dcm` 的 MIT 许可清理副本）和一份 [CC BY 4.0 心脏参考 STL](sample-data/stl/ATTRIBUTION.md)。seed 默认读取这三份仓库素材，因此全新克隆无需额外下载，就能演示图片、DICOM 和 3D。只有当仓库素材缺失时，seed 才会确定性生成无患者来源的 DICOM phantom / 合成曲管作为兜底。CT 与心脏 STL 不是同一病例；题目附带的 STL 仍需另行取得、手动上传，且不进入 Git。所有演示素材都不用于医疗判断。
 
 ## 当前状态
 
@@ -133,7 +133,7 @@ powershell -ExecutionPolicy Bypass -File .\scripts\check.ps1
 powershell -ExecutionPolicy Bypass -File .\scripts\check-full.ps1
 ```
 
-准备本地演示数据（仓库内合成 PNG、心脏参考 STL；DICOM 使用本地清理副本或合成 phantom）：
+准备本地演示数据（仓库内合成 PNG、已脱敏 CT DICOM、心脏参考 STL；仅当这些文件缺失时，seed 才回退到合成 phantom / 曲管）：
 
 ```powershell
 cd apps/api
@@ -156,7 +156,7 @@ npm.cmd run e2e
 
 首次运行需要本机安装 Playwright Chromium：`npx playwright install chromium`。
 
-如需重新生成本地 DICOM 清理副本：
+如需重新生成本地 DICOM 清理副本（会覆盖仓库内已提交的 `CT_small_anonymized.dcm`）：
 
 ```powershell
 .\apps\api\.venv\Scripts\python.exe .\scripts\prepare-dicom-samples.py
@@ -166,7 +166,7 @@ npm.cmd run e2e
 
 ## 样例数据获取与准备
 
-仓库提交两张明确为非临床的合成 PNG 和一份有 [来源与 CC BY 4.0 署名](sample-data/stl/ATTRIBUTION.md)的心脏参考 STL。全新克隆的 seed 会在运行时生成小型 DICOM phantom，**不要求面试官额外下载素材**。以下步骤仅用于验证特定公开 DICOM 或题目提供的可选 STL；这些外部原始文件因隐私、许可或体积原因不进入 Git。来源、哈希、使用条件和清理状态见 [样例数据登记](sample-data/README.md)。
+仓库提交两张明确为非临床的合成 PNG、一份**已脱敏的公开 CT DICOM**（pydicom `CT_small.dcm` 的 MIT 许可清理副本）和一份有 [来源与 CC BY 4.0 署名](sample-data/stl/ATTRIBUTION.md)的心脏参考 STL。全新克隆的 seed 直接读取这三份素材，**不要求面试官额外下载素材**。以下步骤仅用于重新生成清理副本、验证 96 帧压缩 XA 边界，或手动上传题目提供的可选 STL；这些外部原始文件因隐私、许可或体积原因不进入 Git。来源、哈希、使用条件和清理状态见 [样例数据登记](sample-data/README.md)。
 
 1. 先完成依赖安装：
 
@@ -174,7 +174,7 @@ npm.cmd run e2e
    powershell -ExecutionPolicy Bypass -File .\scripts\bootstrap.ps1
    ```
 
-2. 从已安装的 pydicom 测试数据复制 `CT_small.dcm`：
+2. 仅在需要**重新生成**仓库内 CT 清理副本时，取回原始 `CT_small.dcm`：
 
    ```powershell
    New-Item -ItemType Directory -Path .\sample-data\dicom -Force
@@ -182,13 +182,15 @@ npm.cmd run e2e
    Copy-Item -LiteralPath $ctSource -Destination .\sample-data\dicom\CT_small.dcm
    ```
 
+   原始文件含已填充的演示身份标签，禁止直接进入应用或演示。
+
 3. 如需验证 96 帧压缩 XA 边界，从 [Rubo Sample DICOM files](https://www.rubomedical.com/dicom_files/) 手工下载 `DEMO 0002`，按其使用条件解压为：
 
    ```text
    sample-data/dicom/rubo_angiogram_0002/0002.DCM
    ```
 
-   Rubo 样例只用于本地评价，不得随本仓库再分发。未准备该可选样例时，基础 DICOM 路径仍可使用 `CT_small.dcm` 验证。
+   Rubo 样例只用于本地评价，不得随本仓库再分发。未准备该可选样例时，基础 DICOM 路径仍可使用仓库内已提交的 `CT_small_anonymized.dcm` 验证。
 
 4. 如需另行展示面试题 `DEMO SET/stl/` 下的 STL，可将其复制到：
 
@@ -198,13 +200,13 @@ npm.cmd run e2e
 
    这些可选模型不会替换默认 seed 的心脏模型；请在页面中手动上传。录屏优先选用仓库内的心脏参考模型，并在讲解中说明它与 DICOM 并非同一病例。
 
-5. 原始 DICOM 含已填充的演示身份标签，不能直接用于应用或演示。准备完成后生成本地清理副本：
+5. 生成 / 刷新清理副本（会覆盖仓库内的 `CT_small_anonymized.dcm`）：
 
    ```powershell
    .\apps\api\.venv\Scripts\python.exe .\scripts\prepare-dicom-samples.py
    ```
 
-   脚本会处理所有已存在的样例并跳过缺失的可选样例；如果一个原始 DICOM 都没有，则明确失败并提示先按本节准备数据。
+   脚本（scrub v2）会删除直接身份标签、含 PatientID 的 `OtherPatientIDsSequence`、设备/来源字段与私有标签，并确定性替换 UID；它会处理所有已存在的样例并跳过缺失的可选样例；如果一个原始 DICOM 都没有，则明确失败并提示先按本节准备数据。
 
 安装完成后，VS Code 应选择解释器：
 
@@ -267,8 +269,8 @@ powershell -ExecutionPolicy Bypass -File .\scripts\check-full.ps1
 
 ## 当前已知限制
 
-- DICOM 清理脚本只处理 demo 的直接身份标签、私有标签和 UID，不等同于临床级去标识化，也不证明像素中没有烧录文字。
-- Rubo DICOM 仅用于本地评价，不随仓库分发；全新克隆默认使用运行时生成的非临床 DICOM phantom 和仓库内有 CC BY 4.0 署名的心脏参考 STL。
+- DICOM 清理脚本（scrub v2）只处理 demo 的直接身份标签、含 PatientID 的序列、设备/来源字段、私有标签和 UID，不等同于临床级去标识化，也不证明像素中没有烧录文字。
+- 仓库提交的 CT 是 pydicom `CT_small.dcm`（MIT 许可）的脱敏副本；Rubo DICOM 仅用于本地评价，不随仓库分发；另有仓库内 CC BY 4.0 署名的心脏参考 STL。仅当仓库素材缺失时，seed 才回退到运行时生成的非临床 DICOM phantom / 合成曲管。
 - 测试存在来自 FastAPI/Starlette TestClient 依赖的弃用警告；不影响当前测试结果，待上游兼容版本稳定后升级。
 - 前端已按 vendor 拆分：应用主包约 54KB，`antd` / `react` 独立成可缓存 vendor chunk，`three.js` 仅在进入 STL 详情时加载。
 - 真实鉴权、持久化审计表、reprocess、标注批量编辑和 PostgreSQL 生产验证仍在延期范围，详见 `docs/product/12-p8-test-report.md` 与 `PROGRESS.md`。

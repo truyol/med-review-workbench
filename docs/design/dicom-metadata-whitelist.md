@@ -9,7 +9,7 @@
 | DICOM 字段 | 响应键 | 用途 |
 |---|---|---|
 | `Modality` | `modality` | 影像模态，如 CT/XA |
-| `BodyPartExamined` | `body_part_examined` | 检查部位；演示 phantom 为 `PHANTOM` |
+| `BodyPartExamined` | `body_part_examined` | 检查部位；默认 CT 无该字段，回退 phantom 时为 `PHANTOM` |
 | `SOPClassUID` | `sop_class_uid` | SOP 类别 |
 | `Rows` | `rows` | 图像行数 |
 | `Columns` | `columns` | 图像列数 |

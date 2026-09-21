@@ -4,7 +4,7 @@
 
 ## 当前已实现
 
-- 仓库只分发来源、许可已登记的样例：合成 PNG、公开 CC BY 4.0 心脏参考 STL；默认 DICOM 由 seed 生成无患者来源的 phantom。可选外部 DICOM 仅在本地生成清理副本后使用，原始文件不进 Git。
+- 仓库只分发来源、许可已登记的样例：合成 PNG、pydicom MIT 许可的已脱敏 CT 副本、公开 CC BY 4.0 心脏参考 STL；仅当文件缺失时才回退到 seed 生成的无患者来源 phantom。可选外部 DICOM（如 Rubo）仅在本地生成清理副本后使用，原始文件不进 Git。
 - API 根据扩展名、DICOM 魔数及解析器结果判型，限制上传大小；文件以随机 UUID 名保存，**不持久化原始文件名**，也不在默认响应或日志中输出它。
 - DICOM 仅从显式 [白名单](../design/dicom-metadata-whitelist.md)生成 `metadata_summary`；患者姓名、患者 ID、自由文本描述及完整标签转储不进入响应。像素不可用时只给降级警告。
 - 对外错误返回稳定错误码、`next_action` 与 `request_id`，不返回堆栈。访问日志记录 `request_id`、方法、路径、HTTP 状态和耗时；错误路径可附 `error_code`。日志扫描验证已知敏感模式零命中，见 [P8 证据](../product/12-p8-test-report.md)。
