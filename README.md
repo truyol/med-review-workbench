@@ -24,6 +24,33 @@ P8 测试与证据收口已完成：快速门禁和 Docker 真实后端完整门
 
 本产品不做临床诊断，不替代 PACS，不提供自动分割、治疗建议或真实患者系统接入。
 
+## 界面预览
+
+| 项目工作台 | 病例列表 |
+|---|---|
+| ![项目工作台](docs/screenshots/01-projects.png) | ![病例列表](docs/screenshots/02-cases.png) |
+
+| 病例评审看板 | 图片预览 | 3D 模型与结构标记 |
+|---|---|---|
+| ![评审看板](docs/screenshots/03-review-board.png) | ![图片预览](docs/screenshots/04-image-preview.png) | ![3D 查看器](docs/screenshots/05-stl-viewer.png) |
+
+截图由 `apps/web/scripts/capture-screenshots.mjs` 从运行中的演示栈自动生成：
+
+```powershell
+cd apps\web
+node scripts\capture-screenshots.mjs
+```
+
+## 已实现功能
+
+- 项目 → 病例 → 素材三级结构；素材在病例上下文中可追溯。
+- 素材上传与**服务端判型**（DICOM / STL / PNG / JPEG），记录 UUID、大小、SHA256、来源。
+- **图片**：缩略图浏览、类型/状态/标签筛选、两张图片并排比较、标签与备注整理。
+- **DICOM**：白名单元数据、缩略图、多帧识别、无像素/解码失败降级。
+- **3D（STL）**：旋转、缩放、平移、视角复位，以及点击模型放置**结构标记**。
+- **评审**：结论（通过/需补充/拒绝）+ 说明 + 评审人，素材状态由最新评审派生。
+- 统一错误信封（稳定错误码 + `next_action` + `request_id`）与结构化 JSON 日志。
+
 ## 产品思维门禁
 
 每个功能进入 MVP 前必须回答：
@@ -216,42 +243,28 @@ powershell -ExecutionPolicy Bypass -File .\scripts\check-full.ps1
 
 ## 当前已知限制
 
-- P3 只交付工程底座；项目/病例/素材/评审业务已在 P4/P5 实现，后续以 P6-P10 的边界、运维、测试和交付门禁为准。
 - DICOM 清理脚本只处理 demo 的直接身份标签、私有标签和 UID，不等同于临床级去标识化，也不证明像素中没有烧录文字。
 - Rubo DICOM 仅用于本地评价，不随仓库分发；可提交的图片样例是两张明确标注为非临床的合成 PNG。
 - 测试存在来自 FastAPI/Starlette TestClient 依赖的弃用警告；不影响当前测试结果，待上游兼容版本稳定后升级。
-- 当前前端已将 STL/Three.js 查看器动态拆包；首屏主包约 0.93MB，3D 查看器仅在进入 STL 详情时加载，仍保留 Vite 的大 chunk 提示作为后续性能优化项。
-- P8 只证明已实现能力：结构标记、标签 CRUD/筛选和图片并排比较仍未完成；真实鉴权、持久化审计表、reprocess 和 PostgreSQL 生产验证仍在延期范围，详见 P8 报告。
+- 前端已按 vendor 拆分：应用主包约 54KB，`antd` / `react` 独立成可缓存 vendor chunk，`three.js` 仅在进入 STL 详情时加载。
+- 真实鉴权、持久化审计表、reprocess、标注批量编辑和 PostgreSQL 生产验证仍在延期范围，详见 `docs/product/12-p8-test-report.md` 与 `PROGRESS.md`。
 
-## P4 backend API slice
+## API 一览
 
-The backend now contains the first P4 vertical slice for the main interview flow:
+核心接口（统一前缀 `/api/v1`）：
 
-```text
-Project -> Case -> Asset upload -> Review -> Case review board
-```
+- 项目：`POST/GET /projects`
+- 病例：`POST/GET /projects/{project_id}/cases`
+- 素材：`POST/GET /cases/{case_id}/assets`、`GET/PATCH/DELETE /assets/{asset_id}`
+- 素材读取：`GET /assets/{asset_id}/preview`、`GET /assets/{asset_id}/model`
+- 结构标记：`POST/GET /assets/{asset_id}/annotations`、`DELETE /annotations/{annotation_id}`
+- 评审：`POST /assets/{asset_id}/reviews`、`GET /cases/{case_id}/review-board`
+- 健康：`GET /health`、`GET /health/ready`
 
-Implemented endpoints:
+素材校验与隐私：
 
-- `POST /api/v1/projects`
-- `GET /api/v1/projects`
-- `POST /api/v1/projects/{project_id}/cases`
-- `GET /api/v1/projects/{project_id}/cases`
-- `POST /api/v1/cases/{case_id}/assets`
-- `GET /api/v1/cases/{case_id}/assets`
-- `POST /api/v1/assets/{asset_id}/reviews`
-- `GET /api/v1/cases/{case_id}/review-board`
-- `GET /api/v1/assets/{asset_id}/preview`
-- `GET /api/v1/assets/{asset_id}/model`
-- `DELETE /api/v1/assets/{asset_id}`
-
-The P4 backend slice is now consumed by the P5 frontend pages. Tags, advanced search, side-by-side comparison, annotations, reprocess, real authorization, audit persistence, and real AI remain outside the current interview scope.
-
-P4 asset validation currently includes:
-
-- DICOM allowlist metadata extraction with identity-tag withholding.
-- Degraded DICOM handling when metadata is readable but preview is unavailable.
-- STL binary/ASCII validation with triangle-count metadata.
-- `kind` and `status` filters on `GET /api/v1/cases/{case_id}/assets`.
-- PNG preview streaming and STL model streaming endpoints.
-- Tests that assert upload responses and logs do not expose original filenames or DICOM identity values.
+- DICOM 白名单元数据提取，身份字段抑制；
+- 元数据可读但预览不可用时降级，不返回 500；
+- STL 二进制/ASCII 校验并记录三角面数量；
+- 素材列表支持 `kind` / `status` / `tag` 过滤；
+- 上传响应与日志不包含原始文件名或 DICOM 身份值。

@@ -106,6 +106,9 @@ test("real backend persists a structure marker on the seeded STL asset", async (
 
   await page.goto(`/assets/${stl.id}?caseId=${caseId}`);
   await expect(page.getByText("结构标记", { exact: true })).toBeVisible();
+  await page.waitForSelector(".stl-viewer canvas");
+  // Let the STL load and the camera auto-fit before raycasting.
+  await page.waitForTimeout(2500);
 
   // The aorta is a tubular mesh, so some rays pass through the lumen. Sweep a
   // grid of points until one lands on the surface and opens the marker dialog.

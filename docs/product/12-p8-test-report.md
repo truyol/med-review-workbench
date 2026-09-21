@@ -40,13 +40,13 @@ powershell -ExecutionPolicy Bypass -File .\scripts\check-full.ps1
 | 层级 | 结果 | 证据摘要 |
 |---|---|---|
 | Python 静态检查 | 通过 | Ruff、Mypy 通过 |
-| API 单元/集成 | 25 passed | 覆盖业务闭环、文件解析、异常边界、日志、seed、备份恢复和隐私扫描 |
+| API 单元/集成 | 29 passed | 覆盖业务闭环、文件解析、异常边界、标签/备注、结构标记、日志、seed、备份恢复和隐私扫描 |
 | API 覆盖率 | 89% | 904 statements，103 missed；关键路由 96%、领域错误 97%、主应用 98%、repository 95% |
 | 数据库迁移 | 通过 | 隔离临时库执行 upgrade、downgrade，不污染运行数据库 |
 | Web 静态/构建 | 通过 | ESLint、TypeScript/Vite 生产构建通过 |
 | Web 组件 | 3 passed | 页面工作区、四种状态映射、可恢复错误提示 |
 | Web 覆盖率 | 语句 36.17%；分支 42.85%；函数 21.31%；行 78.04% | 如实记录，不设置虚假覆盖率门槛 |
-| Playwright | 4 passed | 2 条 Mock 流程 + 2 条 Docker 真实后端流程 |
+| Playwright | 6 passed | 2 条 Mock 流程 + 4 条 Docker 真实后端流程（主链、异常、标签、结构标记） |
 | 异常 E2E | 通过 | API abort 可恢复提示；真实后端不支持格式返回稳定提示与下一步 |
 | 隐私日志扫描 | 通过 | 修复后复验扫描 Docker API 日志 62 行，敏感模式命中 0 |
 | Python 依赖审计 | 通过 | `pip-audit` 无已知漏洞；两个本地项目包因不在 PyPI 被明确跳过 |
@@ -61,12 +61,12 @@ powershell -ExecutionPolicy Bypass -File .\scripts\check-full.ps1
 | FR-001 项目与病例 | 通过 | API 闭环测试；真实后端 E2E 经 UI 创建项目和病例 |
 | FR-002 素材归档 | 通过（当前支持范围） | DICOM/STL/PNG/JPEG 上传与判型测试；真实 E2E 上传合成 PNG |
 | FR-003 UUID/大小/哈希/格式 | 通过 | API 上传集成测试与真实 E2E |
-| FR-004 卡片状态与备注 | 部分通过 | 四状态组件映射和评审备注已验证；标签尚未实现 |
+| FR-004 卡片状态与备注 | 通过 | 四状态映射；素材级标签与备注可编辑（`PATCH /assets/{id}`）并展示在卡片上 |
 | FR-005 DICOM 安全元数据/预览 | 通过 | 白名单、身份字段抑制、无 Pixel Data/预览降级测试 |
-| FR-006 STL 交互/结构标记 | 部分通过 | 查看器具备旋转、缩放、平移、复位；结构标记未实现，WebGL 操作未自动化 |
+| FR-006 STL 交互/结构标记 | 通过 | 旋转/缩放/平移/复位；点击模型放置结构标记并持久化；E2E 覆盖标记落库 |
 | FR-007 评审持久化 | 通过 | API 集成测试；真实 E2E 提交后查询看板确认 `accepted` |
-| FR-008 类型/状态/标签筛选 | 部分通过 | API 支持类型和状态；标签及完整前端筛选未实现 |
-| FR-009 图片浏览/并排比较/整理 | 部分通过 | 单图预览和评审整理可用；双图选择、并排比较和标签整理未实现 |
+| FR-008 类型/状态/标签筛选 | 通过 | API 与前端均支持类型、状态、标签筛选 |
+| FR-009 图片浏览/并排比较/整理 | 通过 | 单图预览、双图并排比较、标签/状态整理与结论沉淀 |
 | FR-010 异常可解释 | 通过 | P6 API 边界测试、前端错误组件、Mock/真实异常 E2E |
 | FR-011 可追踪且不泄露的日志 | 通过 | request_id 测试；运行日志扫描 54 行、0 命中 |
 | NFR-002 SQLite/PostgreSQL 路径 | 部分通过 | SQLite 迁移、持久卷、备份恢复已验证；PostgreSQL 仅文档化，未生产验证 |
@@ -95,16 +95,13 @@ Full P8 gate passed.
 
 ## 6. 已知风险与延期项
 
-以下项目不会阻塞 P8“验证现有能力”的退出，但属于面试题原始 Must 的未闭合项；必须在 P9 文档一致性检查中明确，并在 P10 前决定补齐或以范围差异说明接受：
+以下项目不会阻塞 P8“验证现有能力”的退出。原先列出的“结构标记、标签、图片并排比较”三个 Must 已在 2026-09-21 补齐（见第 8 节），剩余项须在 P10 前决定补齐或以范围差异说明接受：
 
-1. **结构标记未实现**：FR-006 仅完成 STL 查看和视角操作。
-2. **标签与完整筛选未实现**：FR-004/FR-008 的标签 CRUD、标签筛选及前端筛选入口缺失。
-3. **图片并排比较未实现**：FR-009 只有单图浏览和评审整理，尚不能选择两张图片并排对照。
-4. **真实权限、持久化审计表、reprocess、标注 CRUD 延期**：它们不是当前闭环的隐藏“伪完成项”。
-5. **PostgreSQL 未作生产验证**：仅验证了可选驱动/配置边界和 SQLite 运维路径。
-6. **前端覆盖深度有限**：行覆盖率 78.04%，但语句和函数覆盖率较低；真实 E2E 只覆盖主链与一个真实异常。
-7. **STL/WebGL 操作缺少自动化交互断言**：查看器加载失败有兜底，但旋转/缩放/平移/复位仍依赖人工演示确认。
-8. **非阻塞技术债**：FastAPI/Starlette TestClient 有上游弃用警告；Vite 仍提示大 chunk；`pip-audit` 无法审计不在 PyPI 的两个本地包。
+1. **真实权限、持久化审计表、reprocess、标注批量编辑延期**：它们不是当前闭环的隐藏“伪完成项”。
+2. **PostgreSQL 未作生产验证**：仅验证了可选驱动/配置边界和 SQLite 运维路径。
+3. **前端覆盖深度有限**：行覆盖率较高，但语句和函数覆盖率较低；真实 E2E 覆盖主链、异常、标签与结构标记。
+4. **STL 拖拽旋转/缩放本身未做像素级断言**：标记落库与查看器加载失败兜底已自动化，手势精度仍依赖人工演示确认。
+5. **非阻塞技术债**：FastAPI/Starlette TestClient 有上游弃用警告；`pip-audit` 无法审计不在 PyPI 的本地项目包。
 
 ## 7. 医疗与 AI 边界
 
@@ -123,4 +120,12 @@ Full P8 gate passed.
 4. **E2E 断言脆弱**：mock 用例因 P6 新增兜底 Alert 文案与卡片标题重复触发 strict mode 冲突；AntD 中文按钮自动空格导致 `查看`/`确定` 文本选择器失效。整改：断言改为 `{ exact: true }` 或 `.ant-modal-footer .ant-btn-primary`，并关闭按钮自动空格。
 
 整改后 `scripts/check-full.ps1` 实测输出 `Full P8 gate passed.`（4 条 Playwright 通过），且运行后演示卷中仍只有 `Demo - SHD preoperative asset review` 一个项目。
+
+## 9. 2026-09-21 功能补齐与交付材料
+
+1. **三个 Must 需求补齐**：素材标签/备注（`PATCH /assets/{id}` + 标签筛选）、STL 结构标记（`annotations` CRUD + 点击模型放置）、图片并排比较。迁移 `0003_tags_annotations`；API 测试增至 29，Playwright 增至 6。
+2. **前端拆包**：应用主包由约 946KB 降至约 54KB，`antd`/`react` 拆为可缓存 vendor chunk，`three.js` 仅在 STL 详情加载。
+3. **交付截图**：`docs/screenshots/` 由 `apps/web/scripts/capture-screenshots.mjs` 从运行中的演示栈生成，并在 README 中引用。
+4. **审计健壮性**：`check-full.ps1` 对 Python/Node 依赖审计增加 3 次重试，缓解网络抖动。
+
 
