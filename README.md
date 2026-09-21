@@ -4,9 +4,11 @@
 
 ## 面试官快速启动
 
-前置条件：安装并启动 Docker Desktop（或支持 Compose 的 Docker），确保 `docker compose version` 可执行。在仓库根目录运行：
+前置条件：安装并启动 Docker Desktop（或支持 Compose 的 Docker），确保 `docker compose version` 可执行：
 
 ```sh
+git clone https://github.com/truyol/med-review-workbench.git
+cd med-review-workbench
 docker compose -f deploy/docker-compose.yml up -d --build --wait
 docker compose -f deploy/docker-compose.yml exec -T api python -m app.ops.seed_demo --sample-root /sample-data
 ```
@@ -98,6 +100,7 @@ node scripts\capture-screenshots.mjs
 - [P7 运维手册](docs/engineering/ops.md)
 - [P7 运维化验收清单](docs/product/11-p7-operations-acceptance.md)
 - [P8 测试与证据报告](docs/product/12-p8-test-report.md)
+- [GitHub 面试交付复核](docs/product/13-delivery-readiness.md)
 - [项目生命周期](docs/PROJECT_LIFECYCLE.md)
 
 ## 计划技术栈
