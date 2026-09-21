@@ -2,6 +2,8 @@
 
 状态：收口完成（主流程与优化项已验证）
 
+> 本清单保留 P5 当时的范围决策。交付现状以 README、P8 测试报告和 `docs/product/13-delivery-readiness.md` 为准：标签/备注、并排比较及 STL 结构标记已在 P8 后补齐；下文“本轮未做”和旧测试数量不代表当前缺失。
+
 ## 已完成
 
 - [x] `/projects` 项目列表、新建项目、空状态和加载失败重试
@@ -26,7 +28,7 @@
 - [x] Playwright 主流程：项目 → 病例 → 上传 → 详情 → 看板
 - [x] Playwright API 失败可恢复提示验证
 - [x] STL 查看器加载态、视角复位；图片预览不可用和上传错误沿用后端稳定错误提示
-- [x] 将 STL/Three.js viewer 动态拆包，首屏主包从约 1.84MB 降至约 0.93MB
+- [x] P5 阶段将 STL/Three.js viewer 动态拆包；交付版本进一步拆出 vendor，应用主包约 54KB
 - [x] `scripts/seed-demo.py` 补充可复现的 seed/demo 数据入口
 
-Playwright 主流程和异常流程已在本机 Chrome 通道执行通过（2 passed）。配置使用 `channel: "chrome"`，不依赖 Playwright 自带 Chromium 下载。
+P5 当时的 Playwright 主流程和异常流程曾在本机 Chrome 通道通过。交付版的现行数量和覆盖范围见 P8 测试报告（最新 7 条）；配置使用 `channel: "chrome"`，不依赖 Playwright 自带 Chromium 下载。

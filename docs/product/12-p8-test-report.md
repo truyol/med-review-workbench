@@ -83,15 +83,7 @@ powershell -ExecutionPolicy Bypass -File .\scripts\check-full.ps1
 
 ### 修复后复验记录
 
-历史复验：针对 Mock E2E 的宽泛文本定位和未拦截预览请求，已将“白名单元数据”改为严格精确匹配，并为 `/api/v1/assets/asset-1/preview` 返回可解码的合成 PNG，同时断言图片 `naturalWidth > 0`。当时于 2026-09-21 重新执行完整门禁，输出如下；**最新 7 条 E2E 与 105 行日志结果以第 3 节和第 11 节为准**：
-
-```text
-4 passed (9.8s)
-Privacy scan passed: scanned_lines=62 findings=0
-No known vulnerabilities found
-found 0 vulnerabilities
-Full P8 gate passed.
-```
+历史问题：Mock E2E 的宽泛文本定位和未拦截预览请求曾导致严格模式冲突和伪预览成功。现在“白名单元数据”使用精确匹配，Mock 预览返回可解码合成 PNG，并断言 `naturalWidth > 0`。这些修复已包含在第 3、11 节的最新完整门禁结果中；不再用旧轮次数字代表交付状态。
 
 ## 6. 已知风险与延期项
 
@@ -119,11 +111,11 @@ Full P8 gate passed.
 3. **UI 观感与开发残留**：移除顶栏 `P5 前端` 开发标签，重做布局/主题/卡片/资产详情，启用中文 locale，关闭 AntD 按钮自动空格。
 4. **E2E 断言脆弱**：mock 用例因 P6 新增兜底 Alert 文案与卡片标题重复触发 strict mode 冲突；AntD 中文按钮自动空格导致 `查看`/`确定` 文本选择器失效。整改：断言改为 `{ exact: true }` 或 `.ant-modal-footer .ant-btn-primary`，并关闭按钮自动空格。
 
-该轮整改后 `scripts/check-full.ps1` 实测输出 `Full P8 gate passed.`（当时 4 条 Playwright 通过），且运行后演示卷中仍只有 `Demo - SHD preoperative asset review` 一个项目；最新结果见第 10 节。
+该轮整改后 `scripts/check-full.ps1` 实测输出 `Full P8 gate passed.`，且运行后演示卷中仍只有 `Demo - SHD preoperative asset review` 一个项目；最新结果见第 11 节。
 
 ## 9. 2026-09-21 功能补齐与交付材料
 
-1. **三个 Must 需求补齐**：素材标签/备注（`PATCH /assets/{id}` + 标签筛选）、STL 结构标记（`annotations` CRUD + 点击模型放置）、图片并排比较。迁移 `0003_tags_annotations`；API 测试增至 29，Playwright 增至 6。
+1. **三个 Must 需求补齐**：素材标签/备注（`PATCH /assets/{id}` + 标签筛选）、STL 结构标记（`annotations` CRUD + 点击模型放置）、图片并排比较。迁移 `0003_tags_annotations`；最新测试数量见第 3、11 节。
 2. **前端拆包**：应用主包由约 946KB 降至约 54KB，`antd`/`react` 拆为可缓存 vendor chunk，`three.js` 仅在 STL 详情加载。
 3. **交付截图**：`docs/screenshots/` 由 `apps/web/scripts/capture-screenshots.mjs` 从运行中的演示栈生成，并在 README 中引用。
 4. **审计健壮性**：`check-full.ps1` 对 Python/Node 依赖审计增加 3 次重试，缓解网络抖动。
@@ -132,8 +124,7 @@ Full P8 gate passed.
 
 - 从原始 Word 面试题重新核对 Must：项目/病例/素材、图片浏览筛选比较整理、DICOM 读取、STL 操作、异常、文档、AI 与医疗边界。
 - 修复全新克隆缺少 DICOM/STL 的演示缺口：seed 在外部样例缺席时确定性生成非临床 DICOM phantom 和曲管 STL；单测验证三类素材、DICOM 预览与幂等性。
-- 该轮隔离完整门禁实际输出：API `29 passed`、覆盖率 `92% (1063 statements, 87 missed)`；Web 组件 `3 passed`；Playwright `6 passed (9.9s)`；隐私扫描 `scanned_lines=95 findings=0`；Python 依赖无已知漏洞，Node 生产依赖 `0 vulnerabilities`；最后输出 `Full P8 gate passed.` 并销毁隔离栈和卷。
-- 本报告中保留的旧轮次数字只用于说明整改历史，不作为当前交付验收数字。
+- 该轮隔离完整门禁及随后双图比较补测均通过；当前交付数字统一见第 3、11 节。
 
 ## 11. 双图比较交付前复验（2026-09-21，最新）
 

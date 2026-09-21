@@ -14,8 +14,8 @@
 | P6 异常/边界 | 收口完成 | 损坏、缺失、伪造、超限、保存失败等路径有明确处理 | `docs/product/10-p6-boundary-acceptance.md` |
 | P7 运维化 | 收口完成 | Docker Compose、Nginx、配置、健康检查和运维说明完成 | `docs/product/11-p7-operations-acceptance.md`；`docs/engineering/ops.md` |
 | P8 测试 | 收口完成 | 单元、集成、E2E、隐私扫描与测试报告通过 | API 29/92%、组件 3、Playwright 7、日志扫描 105 行零命中；`scripts/check-full.ps1` 输出 `Full P8 gate passed.` |
-| P9 文档 | 进行中 | README、PRD、设计、部署、AI 使用和演示材料一致 | 按原始题目复核交付文档；修正全新克隆样例说明与过期数字 |
-| P10 交付验收 | 未开始 | 新环境可复现，五分钟演示和交付清单全部通过 | 新环境复现 + 五分钟演示 + 交付清单 |
+| P9 文档 | 收口完成 | README、PRD、设计、部署、AI 使用和演示材料一致 | 数字与历史版本已核对；见 `docs/product/14-p9-documentation-acceptance.md` |
+| P10 交付验收 | 进行中 | 新环境可复现，五分钟演示和交付清单全部通过 | 独立克隆复现、克隆内 Playwright 7 passed、重启持久性与 request_id 排障已复核；剩余人工五分钟演示与面试官设备复现，见 `DELIVERY_CHECKLIST.md` |
 
 ## 当前决策
 
@@ -28,7 +28,7 @@
 
 ## 当前门禁
 
-进入 P9：收口 README、PRD、技术设计、运维手册、AI 使用记录与演示材料的一致性；清理过期内容；确保文档与 `check-full.ps1` 的实际行为一致。
+P9 文档一致性已收口，进入 P10 独立交付验收。自动检查与人工演示分开记载；不得将自动 E2E 等同于人工五分钟演示。
 
 ## 已完成（2026-09-21 补齐）
 
@@ -38,7 +38,7 @@
 - 前端拆包（应用主包约 54KB，vendor 可缓存，three.js 懒加载）。
 - 交付截图：`docs/screenshots/`。
 
-## 已知延期项（不阻塞 P9，须在 P10 前决定补齐或以范围差异说明）
+## 已知延期项（按范围差异披露，不冒充已实现）
 
 - 真实鉴权、持久化审计表、reprocess、标注批量编辑。
 - PostgreSQL 仅提供可配置切换路径，未做生产负载验证。
