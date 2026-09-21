@@ -13,7 +13,7 @@
 | P5 前端 | 收口完成 | 核心页面、状态和 3D/DICOM 交互达到需求验收 | `docs/product/09-p5-frontend-acceptance.md` |
 | P6 异常/边界 | 收口完成 | 损坏、缺失、伪造、超限、保存失败等路径有明确处理 | `docs/product/10-p6-boundary-acceptance.md` |
 | P7 运维化 | 收口完成 | Docker Compose、Nginx、配置、健康检查和运维说明完成 | `docs/product/11-p7-operations-acceptance.md`；`docs/engineering/ops.md` |
-| P8 测试 | 收口完成 | 单元、集成、E2E、隐私扫描与测试报告通过 | `docs/product/12-p8-test-report.md`；`scripts/check-full.ps1` 输出 `Full P8 gate passed.` |
+| P8 测试 | 收口完成 | 单元、集成、E2E、隐私扫描与测试报告通过 | API 29/92%、组件 3、Playwright 7、日志扫描 105 行零命中；`scripts/check-full.ps1` 输出 `Full P8 gate passed.` |
 | P9 文档 | 进行中 | README、PRD、设计、部署、AI 使用和演示材料一致 | 按原始题目复核交付文档；修正全新克隆样例说明与过期数字 |
 | P10 交付验收 | 未开始 | 新环境可复现，五分钟演示和交付清单全部通过 | 新环境复现 + 五分钟演示 + 交付清单 |
 

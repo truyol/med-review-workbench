@@ -45,10 +45,10 @@ powershell -ExecutionPolicy Bypass -File .\scripts\check-full.ps1
 | 数据库迁移 | 通过 | 隔离临时库执行 upgrade、downgrade，不污染运行数据库 |
 | Web 静态/构建 | 通过 | ESLint、TypeScript/Vite 生产构建通过 |
 | Web 组件 | 3 passed | 页面工作区、四种状态映射、可恢复错误提示 |
-| Web 覆盖率 | 语句 38.94%；分支 39.13%；函数 24.73%；行 38.63% | 如实记录，复杂交互主要由真实后端 E2E 覆盖；不设置虚假覆盖率门槛 |
-| Playwright | 6 passed | 2 条 Mock 流程 + 4 条 Docker 真实后端流程（主链、异常、标签、结构标记） |
+| Web 覆盖率 | 语句 40.65%；分支 39.31%；函数 27.83%；行 40.00% | 如实记录，复杂交互主要由真实后端 E2E 覆盖；不设置虚假覆盖率门槛 |
+| Playwright | 7 passed | 2 条 Mock 流程 + 5 条 Docker 真实后端流程（主链、异常、标签、双图比较、结构标记） |
 | 异常 E2E | 通过 | API abort 可恢复提示；真实后端不支持格式返回稳定提示与下一步 |
-| 隐私日志扫描 | 通过 | 最新隔离门禁扫描 Docker API 日志 95 行，敏感模式命中 0 |
+| 隐私日志扫描 | 通过 | 最新隔离门禁扫描 Docker API 日志 105 行，敏感模式命中 0 |
 | Python 依赖审计 | 通过 | `pip-audit` 无已知漏洞；本地项目包 `medreview-api` 因不在 PyPI 被明确跳过 |
 | Node 生产依赖审计 | 通过 | `npm audit --omit=dev --audit-level=high`：0 vulnerabilities |
 
@@ -66,9 +66,9 @@ powershell -ExecutionPolicy Bypass -File .\scripts\check-full.ps1
 | FR-006 STL 交互/结构标记 | 通过 | 旋转/缩放/平移/复位；点击模型放置结构标记并持久化；E2E 覆盖标记落库 |
 | FR-007 评审持久化 | 通过 | API 集成测试；真实 E2E 提交后查询看板确认 `accepted` |
 | FR-008 类型/状态/标签筛选 | 通过 | API 与前端均支持类型、状态、标签筛选 |
-| FR-009 图片浏览/并排比较/整理 | 通过 | 单图预览、双图并排比较、标签/状态整理与结论沉淀 |
+| FR-009 图片浏览/并排比较/整理 | 通过 | 单图预览、双图并排比较、标签/状态整理与结论沉淀；真实后端 E2E 断言左右为不同且可解码的预览 |
 | FR-010 异常可解释 | 通过 | P6 API 边界测试、前端错误组件、Mock/真实异常 E2E |
-| FR-011 可追踪且不泄露的日志 | 通过 | request_id 测试；最新运行日志扫描 95 行、0 命中 |
+| FR-011 可追踪且不泄露的日志 | 通过 | request_id 测试；最新运行日志扫描 105 行、0 命中 |
 | NFR-002 SQLite/PostgreSQL 路径 | 部分通过 | SQLite 迁移、持久卷、备份恢复已验证；PostgreSQL 仅文档化，未生产验证 |
 | NFR-006 DICOM 白名单 | 通过 | 白名单单测、敏感描述字段抑制、日志隐私扫描 |
 
@@ -83,7 +83,7 @@ powershell -ExecutionPolicy Bypass -File .\scripts\check-full.ps1
 
 ### 修复后复验记录
 
-历史复验：针对 Mock E2E 的宽泛文本定位和未拦截预览请求，已将“白名单元数据”改为严格精确匹配，并为 `/api/v1/assets/asset-1/preview` 返回可解码的合成 PNG，同时断言图片 `naturalWidth > 0`。当时于 2026-09-21 重新执行完整门禁，输出如下；**最新 6 条 E2E 与 95 行日志结果以第 3 节和第 10 节为准**：
+历史复验：针对 Mock E2E 的宽泛文本定位和未拦截预览请求，已将“白名单元数据”改为严格精确匹配，并为 `/api/v1/assets/asset-1/preview` 返回可解码的合成 PNG，同时断言图片 `naturalWidth > 0`。当时于 2026-09-21 重新执行完整门禁，输出如下；**最新 7 条 E2E 与 105 行日志结果以第 3 节和第 11 节为准**：
 
 ```text
 4 passed (9.8s)
@@ -99,7 +99,7 @@ Full P8 gate passed.
 
 1. **真实权限、持久化审计表、reprocess、标注批量编辑延期**：它们不是当前闭环的隐藏“伪完成项”。
 2. **PostgreSQL 未作生产验证**：仅验证了可选驱动/配置边界和 SQLite 运维路径。
-3. **前端组件覆盖深度有限**：行覆盖率 38.63%，语句和函数覆盖率也较低；真实 E2E 覆盖主链、异常、标签与结构标记，不等于组件分支全覆盖。
+3. **前端组件覆盖深度有限**：行覆盖率 40.00%，函数覆盖率 27.83%；真实 E2E 覆盖主链、异常、标签、双图比较与结构标记，不等于组件分支全覆盖。
 4. **STL 拖拽旋转/缩放本身未做像素级断言**：标记落库与查看器加载失败兜底已自动化，手势精度仍依赖人工演示确认。
 5. **非阻塞技术债**：FastAPI/Starlette TestClient 有上游弃用警告；`pip-audit` 无法审计不在 PyPI 的本地项目包。
 
@@ -132,6 +132,11 @@ Full P8 gate passed.
 
 - 从原始 Word 面试题重新核对 Must：项目/病例/素材、图片浏览筛选比较整理、DICOM 读取、STL 操作、异常、文档、AI 与医疗边界。
 - 修复全新克隆缺少 DICOM/STL 的演示缺口：seed 在外部样例缺席时确定性生成非临床 DICOM phantom 和曲管 STL；单测验证三类素材、DICOM 预览与幂等性。
-- 最新隔离完整门禁实际输出：API `29 passed`、覆盖率 `92% (1063 statements, 87 missed)`；Web 组件 `3 passed`；Playwright `6 passed (9.9s)`；隐私扫描 `scanned_lines=95 findings=0`；Python 依赖无已知漏洞，Node 生产依赖 `0 vulnerabilities`；最后输出 `Full P8 gate passed.` 并销毁隔离栈和卷。
+- 该轮隔离完整门禁实际输出：API `29 passed`、覆盖率 `92% (1063 statements, 87 missed)`；Web 组件 `3 passed`；Playwright `6 passed (9.9s)`；隐私扫描 `scanned_lines=95 findings=0`；Python 依赖无已知漏洞，Node 生产依赖 `0 vulnerabilities`；最后输出 `Full P8 gate passed.` 并销毁隔离栈和卷。
 - 本报告中保留的旧轮次数字只用于说明整改历史，不作为当前交付验收数字。
 
+## 11. 双图比较交付前复验（2026-09-21，最新）
+
+- 比较弹窗的两侧选项改为安全标签/素材短 ID，不暴露原始文件名；已经选到左侧的素材不再出现在右侧可选列表，反之亦然。
+- 新增真实后端 Playwright：上传仓库内第二张合成 PNG，在比较弹窗选择两张不同图片，断言左右预览均解码成功且 `src` 不同。
+- 最新完整门禁：API `29 passed`、覆盖率 `92%`；Web 组件 `3 passed`，语句/分支/函数/行覆盖率分别为 `40.65% / 39.31% / 27.83% / 40.00%`；Playwright `7 passed (10.5s)`；隐私扫描 `scanned_lines=105 findings=0`；Python 依赖无已知漏洞，Node 生产依赖 `0 vulnerabilities`；最终输出 `Full P8 gate passed.`，并销毁隔离栈和卷。

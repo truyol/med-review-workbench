@@ -338,34 +338,41 @@ function CompareModal({
 }) {
   const [left, setLeft] = useState<string | undefined>();
   const [right, setRight] = useState<string | undefined>();
-  const options = images.map((asset) => ({ value: asset.id, label: asset.source_label }));
+  const options = images.map((asset) => ({
+    value: asset.id,
+    label: `${asset.tags.length > 0 ? asset.tags.join("、") : asset.source_label} · ${asset.id.slice(0, 8)}`,
+  }));
+  const leftAsset = images.find((asset) => asset.id === left);
+  const rightAsset = images.find((asset) => asset.id === right);
 
   return (
     <Modal title="图片并排比较" open={open} onCancel={onClose} footer={null} width={920}>
       <Space style={{ marginBottom: 16 }}>
         <Select
           placeholder="选择左侧图片"
+          aria-label="左侧图片"
           style={{ width: 280 }}
-          options={options}
-          value={left}
+          options={options.filter((option) => option.value !== right)}
+          value={leftAsset?.id}
           onChange={setLeft}
         />
         <Select
           placeholder="选择右侧图片"
+          aria-label="右侧图片"
           style={{ width: 280 }}
-          options={options}
-          value={right}
+          options={options.filter((option) => option.value !== left)}
+          value={rightAsset?.id}
           onChange={setRight}
         />
       </Space>
       <div className="compare-grid">
-        {left ? (
-          <img src={assetPreviewUrl(left)} alt="左侧素材" />
+        {leftAsset ? (
+          <img src={assetPreviewUrl(leftAsset.id)} alt="左侧素材" />
         ) : (
           <Empty description="选择左侧图片" />
         )}
-        {right ? (
-          <img src={assetPreviewUrl(right)} alt="右侧素材" />
+        {rightAsset ? (
+          <img src={assetPreviewUrl(rightAsset.id)} alt="右侧素材" />
         ) : (
           <Empty description="选择右侧图片" />
         )}

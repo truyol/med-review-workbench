@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { readFileSync } from "node:fs";
 
 test.skip(!process.env.PLAYWRIGHT_LIVE, "requires the Docker-backed P8 environment");
 
@@ -93,6 +94,41 @@ test("real backend persists asset tags and note", async ({ page, request }) => {
   const assets = await (await request.get(`/api/v1/cases/${caseId}/assets`)).json();
   expect(assets.data[0].tags).toContain("瓣膜");
   expect(assets.data[0].note).toBe("E2E 标签与备注验证");
+});
+
+test("real backend compares two distinct image previews", async ({ page, request }) => {
+  const projects = await (await request.get("/api/v1/projects?limit=100")).json();
+  const demo = projects.data.find((item: { name: string }) => item.name.includes("SHD"));
+  expect(demo).toBeTruthy();
+  const cases = await (await request.get(`/api/v1/projects/${demo.id}/cases?limit=100`)).json();
+  const caseId = cases.data[0].id;
+  const secondImage = readFileSync(
+    new URL("../../../sample-data/image/synthetic-cardiac-ct-annotated.png", import.meta.url),
+  );
+  const upload = await request.post(`/api/v1/cases/${caseId}/assets`, {
+    multipart: {
+      file: { name: "synthetic-compare.png", mimeType: "image/png", buffer: secondImage },
+    },
+  });
+  expect(upload.ok()).toBeTruthy();
+
+  await page.goto(`/cases/${caseId}`);
+  await page.getByRole("button", { name: "并排比较" }).click();
+  const dialog = page.getByRole("dialog", { name: "图片并排比较" });
+  await expect(dialog).toBeVisible();
+  await dialog.locator(".ant-select").nth(0).click();
+  await page.locator(".ant-select-dropdown:visible .ant-select-item-option").first().click();
+  await dialog.locator(".ant-select").nth(1).click();
+  await expect(page.locator(".ant-select-dropdown:visible .ant-select-item-option")).toHaveCount(1);
+  await page.locator(".ant-select-dropdown:visible .ant-select-item-option").first().click();
+
+  const left = dialog.getByRole("img", { name: "左侧素材" });
+  const right = dialog.getByRole("img", { name: "右侧素材" });
+  await expect(left).toBeVisible();
+  await expect(right).toBeVisible();
+  await expect.poll(() => left.evaluate((image: HTMLImageElement) => image.naturalWidth)).toBeGreaterThan(0);
+  await expect.poll(() => right.evaluate((image: HTMLImageElement) => image.naturalWidth)).toBeGreaterThan(0);
+  expect(await left.getAttribute("src")).not.toBe(await right.getAttribute("src"));
 });
 
 test("real backend persists a structure marker on the seeded STL asset", async ({ page, request }) => {
