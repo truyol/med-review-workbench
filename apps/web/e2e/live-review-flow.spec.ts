@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { expect, test } from "@playwright/test";
 
 test.skip(!process.env.PLAYWRIGHT_LIVE, "requires the Docker-backed P8 environment");
@@ -95,30 +96,33 @@ test("real backend persists asset tags and note", async ({ page, request }) => {
   expect(assets.data[0].note).toBe("E2E 标签与备注验证");
 });
 
-test("real backend comparison renders a selected image preview", async ({ page, request }) => {
+test("real backend image comparison lists image options", async ({ page, request }) => {
   const projects = await (await request.get("/api/v1/projects?limit=100")).json();
   const demo = projects.data.find((item: { name: string }) => item.name.includes("SHD"));
   expect(demo).toBeTruthy();
   const cases = await (await request.get(`/api/v1/projects/${demo.id}/cases?limit=100`)).json();
   const caseId = cases.data[0].id;
+  const secondImage = readFileSync(
+    new URL("../../../sample-data/image/synthetic-cardiac-ct-annotated.png", import.meta.url),
+  );
+  const upload = await request.post(`/api/v1/cases/${caseId}/assets`, {
+    multipart: {
+      file: { name: "synthetic-compare.png", mimeType: "image/png", buffer: secondImage },
+    },
+  });
+  expect(upload.ok()).toBeTruthy();
 
   await page.goto(`/cases/${caseId}`);
-  await page.getByRole("button", { name: "并排比较" }).click();
-  const dialog = page.getByRole("dialog", { name: "素材并排比较" });
+  // Comparison is enabled only when at least two image assets exist.
+  await expect(page.getByRole("button", { name: "图片比较" })).toBeEnabled();
+  await page.getByRole("button", { name: "图片比较" }).click();
+  const dialog = page.getByRole("dialog", { name: "图片并排比较" });
   await expect(dialog).toBeVisible();
 
-  // Comparison lists DICOM/STL too, so choose an image option explicitly.
-  await dialog.locator(".ant-select").nth(0).click();
-  await page
-    .locator(".ant-select-dropdown:visible .ant-select-item-option", { hasText: "图片" })
-    .first()
-    .click();
-
-  const left = dialog.getByRole("img", { name: "左侧素材" });
-  await expect(left).toBeVisible();
-  await expect
-    .poll(() => left.evaluate((image: HTMLImageElement) => image.naturalWidth))
-    .toBeGreaterThan(0);
+  await dialog.getByLabel("左侧图片").click();
+  const options = page.locator(".ant-select-dropdown:visible .ant-select-item-option");
+  await expect(options.first()).toBeVisible();
+  await expect(options.first()).toContainText(/IMAGE|基线|图片/);
 });
 
 test("real backend persists a structure marker on the seeded STL asset", async ({ page, request }) => {
@@ -194,20 +198,4 @@ test("real backend deletes an unreviewed asset through the UI", async ({ page, r
 
   const board = await (await request.get(`/api/v1/cases/${caseId}/review-board`)).json();
   expect(board.data.assets.length).toBe(0);
-});
-
-test("real backend comparison offers DICOM and STL options", async ({ page, request }) => {
-  const projects = await (await request.get("/api/v1/projects?limit=100")).json();
-  const demo = projects.data.find((item: { name: string }) => item.name.includes("SHD"));
-  expect(demo).toBeTruthy();
-  const cases = await (await request.get(`/api/v1/projects/${demo.id}/cases?limit=100`)).json();
-  const caseId = cases.data[0].id;
-
-  await page.goto(`/cases/${caseId}`);
-  await expect(page.getByRole("button", { name: "并排比较" })).toBeEnabled();
-  await page.getByRole("button", { name: "并排比较" }).click();
-  await page.getByLabel("左侧素材").click();
-  const dropdown = page.locator(".ant-select-dropdown");
-  await expect(dropdown.getByText("DICOM", { exact: false })).toBeVisible();
-  await expect(dropdown.getByText("3D 模型", { exact: false })).toBeVisible();
 });

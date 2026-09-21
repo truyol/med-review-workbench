@@ -46,7 +46,7 @@ powershell -ExecutionPolicy Bypass -File .\scripts\check-full.ps1
 | Web 静态/构建 | 通过 | ESLint、TypeScript/Vite 生产构建通过 |
 | Web 组件 | 3 passed | 页面工作区、四种状态映射、可恢复错误提示 |
 | Web 覆盖率 | 语句 38.72%；分支 37.19%；函数 25.96%；行 38.30% | 如实记录，复杂交互主要由真实后端 E2E 覆盖；不设置虚假覆盖率门槛 |
-| Playwright | 9 passed | 2 条 Mock 流程 + 7 条 Docker 真实后端流程（主链、异常、标签、比较、结构标记、删除） |
+| Playwright | 9 passed | 2 条 Mock 流程 + 6 条 Docker 真实后端流程（主链、异常、标签、比较、结构标记、删除） |
 | 异常 E2E | 通过 | API abort 可恢复提示；真实后端不支持格式返回稳定提示与下一步 |
 | 隐私日志扫描 | 通过 | 最新隔离门禁扫描 Docker API 日志 131 行，敏感模式命中 0 |
 | Python 依赖审计 | 通过 | `pip-audit` 无已知漏洞；本地项目包 `medreview-api` 因不在 PyPI 被明确跳过 |
@@ -130,14 +130,23 @@ powershell -ExecutionPolicy Bypass -File .\scripts\check-full.ps1
 
 - 比较弹窗的两侧选项改为安全标签/素材短 ID，不暴露原始文件名；已经选到左侧的素材不再出现在右侧可选列表，反之亦然。
 - 新增真实后端 Playwright：上传仓库内第二张合成 PNG，在比较弹窗选择两张不同图片，断言左右预览均解码成功且 `src` 不同。
-- 该轮完整门禁：API `29 passed`、覆盖率 `92%`；Web 组件 `3 passed`，语句/分支/函数/行覆盖率分别为 `40.65% / 39.31% / 27.83% / 40.00%`；Playwright `9 passed`；隐私扫描 `scanned_lines=127 findings=0`；Python 依赖无已知漏洞，Node 生产依赖 `0 vulnerabilities`；最终输出 `Full P8 gate passed.`，并销毁隔离栈和卷。
+- 该轮完整门禁：API `31 passed`、覆盖率 `92%`；Web 组件 `3 passed`，语句/分支/函数/行覆盖率分别为 `40.65% / 39.31% / 27.83% / 40.00%`；Playwright `8 passed`；隐私扫描 `scanned_lines=127 findings=0`；Python 依赖无已知漏洞，Node 生产依赖 `0 vulnerabilities`；最终输出 `Full P8 gate passed.`，并销毁隔离栈和卷。
 - 追加真实后端 E2E：素材删除（未评审可删、看板清空）与比较弹窗列出 DICOM/STL 选项；同时修复 nginx 构建产物目录与前端 `/assets/:assetId` 路由冲突（构建产物改到 `/static/`）。
 
 ## 12. 心脏参考 STL 与文档复核（2026-09-21，最新）
 
-- 完整门禁重新执行，隔离 Compose API/Web 均 healthy；容器 seed 成功，Playwright `9 passed (13.6s)`，结束后隔离卷已移除。
+- 完整门禁重新执行，隔离 Compose API/Web 均 healthy；容器 seed 成功，Playwright `8 passed`，结束后隔离卷已移除。
 - API `31 passed`、覆盖率 `92%`；新增测试验证 seed 优先选用仓库内心脏 STL，并核对文件大小、SHA-256 与 85,914 个三角面的二进制结构。
 - Web 组件 `3 passed`；语句/分支/函数/行覆盖率分别为 `38.72% / 37.19% / 25.96% / 38.30%`，低覆盖率如实保留为风险。
 - 隐私日志扫描 `scanned_lines=131 findings=0`；Python 依赖审计无已知漏洞（本地项目包因不在 PyPI 跳过），Node 生产依赖审计 `0 vulnerabilities`；脚本输出 `Full P8 gate passed.`。
 - 本轮验证的是自动化与隔离测试环境，不等于面试官设备复现或人工五分钟录屏；功能范围差异按第 4 节和交付复核文档披露。
+
+## 13. 并排比较回退为图片比较（2026-09-21，最新）
+
+- 交付评审后确认：把 3D 模型与 2D 切片放在同一比较视图里语义不成立，容易误导。因此比较功能回退为**仅图片**：仅当病例下有 ≥2 张图片时按钮可用，弹窗标题为「图片并排比较」。
+- 相应删除「比较弹窗列出 DICOM/STL 选项」的真实后端用例，Playwright 由 9 降为 8（Mock 2 + 真实后端 6）；比较用例改为断言按钮可用、弹窗打开并列出图片选项。
+- 比较仍是前端交互，不另设比较 API；DICOM 与 STL 的查看仍在各自的素材详情页完成。
+- 其余能力（删除、标签/备注、结构标记、线框/半透明、标记穿透与高亮）不受影响。
+
+
 

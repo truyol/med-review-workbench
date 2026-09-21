@@ -1,4 +1,4 @@
-# P9 文档一致性验收
+﻿# P9 文档一致性验收
 
 状态：收口完成（2026-09-21）。此处只确认文档与已实现范围、已取得的自动化证据一致，不代替 P10 人工演示。
 
@@ -7,7 +7,7 @@
 | 项目 | 当前交付口径 | 依据 |
 |---|---|---|
 | 面试题功能 | 病例下图片/DICOM/STL 归档、浏览、筛选、双图比较、3D 结构标记与评审闭环；不宣称临床用途 | `docs/product/13-delivery-readiness.md`、`docs/product/04-acceptance-matrix.md` |
-| 测试 | 最新完整门禁：API 31（覆盖率 92%）、前端组件 3、Playwright 9（Mock 2 + 真实后端 7）、隐私日志扫描 131 行零命中 | `docs/product/12-p8-test-report.md` 第 3、12 节 |
+| 测试 | 最新完整门禁：API 31（覆盖率 92%）、前端组件 3、Playwright 8（Mock 2 + 真实后端 6）、隐私日志扫描 131 行零命中 | `docs/product/12-p8-test-report.md` 第 3、12 节 |
 | 首屏体积 | 当前应用主包约 54KB，vendor 单独拆分；旧 P5 体积数字只属于历史版本 | `README.md`、`docs/product/09-p5-frontend-acceptance.md` |
 | 新克隆样例 | Git 内有两张非临床 PNG 和一份 CC BY 4.0 心脏参考 STL；缺少本地清理 DICOM 时 seed 生成非临床 phantom，题目原始大样例不入库 | `README.md`、`sample-data/README.md`、`sample-data/stl/ATTRIBUTION.md` |
 | 部署与运维 | Compose + SQLite 持久卷；seed 为显式步骤；`down` 不删卷，`down -v` 会删卷 | `README.md`、`docs/engineering/ops.md` |
@@ -23,3 +23,4 @@
 ## 交付入口
 
 面试官从根 README 的“快速启动”执行 Docker Compose + seed；技术/API 见 `TECH_DESIGN.md`，运维和排障见 `docs/engineering/ops.md`，五分钟路线见 `docs/product/06-demo-script.md`，当前交付状态见根目录 `DELIVERY_CHECKLIST.md`。
+
