@@ -19,10 +19,10 @@ docker compose -f deploy/docker-compose.yml exec -T api python -m app.ops.seed_d
 
 ## 当前状态
 
-P8 测试与证据已通过，P9 文档一致性已收口，当前进行 P10 交付验收；人工五分钟演示尚待确认。测试报告见 [P8 证据](docs/product/12-p8-test-report.md)，交付状态见 [交付清单](DELIVERY_CHECKLIST.md)。
+P8 测试与证据已通过，P9 文档一致性已收口，P10 交付验收基本完成：五分钟演示已录屏，仅剩面试官设备复现。测试报告见 [P8 证据](docs/product/12-p8-test-report.md)，交付状态见 [交付清单](DELIVERY_CHECKLIST.md)。
 
 - 项目根目录：克隆后的仓库根目录
-- 当前阶段：P10 交付验收中
+- 当前阶段：P10 交付验收（待面试官设备复现）
 - 产品定位：结构性心脏病术前规划素材评审工作台
 - 业务代码：P4 后端闭环与 P5 前端主流程已完成
 - 原则：先从用户问题定义范围，再做技术设计和实现
