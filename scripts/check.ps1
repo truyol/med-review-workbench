@@ -18,8 +18,12 @@ if (-not (Test-Path -LiteralPath $apiPython)) {
 }
 
 Write-Host 'Project scripts: ruff check'
-& $apiPython -m ruff check (Join-Path $projectRoot 'scripts\prepare-dicom-samples.py')
+& $apiPython -m ruff check (Join-Path $projectRoot 'scripts\prepare-dicom-samples.py') (Join-Path $projectRoot 'scripts\seed-demo.py') (Join-Path $projectRoot 'scripts\privacy-scan.py')
 Assert-NativeCommandSucceeded 'Project scripts ruff check'
+
+Write-Host 'Operations: Docker Compose config'
+docker compose -f (Join-Path $projectRoot 'deploy\docker-compose.yml') config --quiet
+Assert-NativeCommandSucceeded 'Docker Compose config'
 
 Write-Host 'API: ruff check'
 Push-Location $apiRoot
@@ -32,11 +36,21 @@ try {
     Write-Host 'API: pytest'
     & $apiPython -m pytest -q
     Assert-NativeCommandSucceeded 'API pytest'
-    Write-Host 'API: alembic upgrade/downgrade smoke'
-    & $apiPython -m alembic upgrade head
-    Assert-NativeCommandSucceeded 'API alembic upgrade'
-    & $apiPython -m alembic downgrade base
-    Assert-NativeCommandSucceeded 'API alembic downgrade'
+    Write-Host 'API: isolated alembic upgrade/downgrade smoke'
+    $migrationDatabase = Join-Path $env:TEMP "medreview-migration-$([guid]::NewGuid()).db"
+    $previousDatabaseUrl = $env:APP_DATABASE_URL
+    $migrationDatabaseUrl = $migrationDatabase.Replace('\', '/')
+    $env:APP_DATABASE_URL = "sqlite:///$migrationDatabaseUrl"
+    try {
+        & $apiPython -m alembic upgrade head
+        Assert-NativeCommandSucceeded 'API alembic upgrade'
+        & $apiPython -m alembic downgrade base
+        Assert-NativeCommandSucceeded 'API alembic downgrade'
+    }
+    finally {
+        $env:APP_DATABASE_URL = $previousDatabaseUrl
+        Remove-Item -LiteralPath $migrationDatabase -Force -ErrorAction SilentlyContinue
+    }
 }
 finally {
     Pop-Location

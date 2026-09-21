@@ -1,5 +1,39 @@
 # AI 使用记录
 
+## 2026-09-21：演示验收整改（UI / 3D / 数据隔离）
+
+- 任务：修复演示时发现的问题——前端观感、STL 视图空白、图片"打不开"、演示库被 P7/P8 测试数据污染。
+- AI 建议：把根因分成三类分别处理：测试数据隔离、3D 查看器相机适配、UI/开发残留清理；不要靠手工删数据掩盖问题。
+- 人工验证：实测 `/preview` 与 `/model` 均返回 200（图片其实正常，"打不开"实为 STL 视图空白）；查询容器卷确认脏数据来自 `live-review-flow` 每次新建的时间戳项目与手动验证数据。
+- 修改/拒绝：拒绝只删脏数据不改根因；改为让 `check-full.ps1` 使用隔离 Compose 项目 `medreview-p8-gate` + 端口 18080 并在结束后 `down -v`，另加 `reset-demo.ps1`。拒绝保留顶栏 `P5 前端` 开发标签。STL 查看器改用 `geometry.center()` + drei `<Bounds fit clip observe>` 做模型居中与相机自适应。
+- 验证方式：`check-full.ps1` 实测输出 `Full P8 gate passed.`（Playwright 4 passed），且运行后演示卷中仍只有 `Demo - SHD preoperative asset review` 一个项目；`reset-demo.ps1` 实测清空脏数据并重建种子。
+- 医疗边界：仅工程素材评审能力，使用合成/清理样例；未接入真实 AI、真实患者数据，未生成诊断或治疗建议。
+
+## 2026-09-21：P8 测试与证据收口
+
+- 任务：用自动化和真实运行证据验证当前实现，并形成可追溯测试报告。
+- AI 建议：增加真实后端 Playwright 闭环、可复用隐私日志扫描、依赖审计和一键完整门禁；同时报告覆盖率实际数值。
+- 人工约束：不以 Mock E2E 冒充真实联调，不设置没有依据的覆盖率数字，不把结构标记、标签筛选、图片并排比较等未实现能力写成通过。
+- 修改/拒绝：拒绝为了让 P8 报告“全绿”而篡改需求状态；FR-006/008/009 保留为部分通过。迁移检查改为临时数据库，避免测试工具破坏开发数据；Ant Design 弃用属性同步修正。
+- 验证：修复 Mock E2E 的严格定位冲突并补齐可解码 PNG 预览响应后，完整门禁重新执行通过；API 25 tests/89%，Web 3 tests，Playwright 4 tests，运行日志 62 行零敏感命中，Python/Node 依赖无已知漏洞，最终输出 `Full P8 gate passed.`。
+- 医疗与 AI 边界：只验证工程素材评审能力，使用合成或清理样例；没有接入真实 AI、真实患者数据，也没有生成诊断或治疗建议，评审结论继续由人工确认。
+
+## 2026-09-21：P7 运维化
+
+- 任务：建立可部署、可观测、可备份恢复的单机演示运行方式。
+- AI 建议：使用 API/Web 多阶段镜像、Nginx 反代、Compose readiness 和持久卷，并把 request_id 排障写成可执行步骤。
+- 人工约束：默认保留 SQLite，PostgreSQL 只提供驱动、配置方式和限制说明；拒绝为了展示技术栈提前加入 Kubernetes、Redis、Celery 或未经验证的高可用声明。
+- 验证：Compose 配置静态解析、SQLite 备份恢复 round-trip 和统一工程检查；容器运行证据必须等 Docker engine 可访问后补齐。
+- 医疗边界：运维能力不改变产品用途，不接入真实患者数据、真实 AI、诊断或治疗决策。
+- 复核修正：发现宿主机 seed 无法填充容器卷后，将 seed 逻辑放入 API 包并提供容器内显式命令；同时把 `psycopg` 改为可选镜像依赖、关闭同源容器部署不需要的 CORS。拒绝在缺少容器运行证据时提前把 P7 标为完成。
+
+## 2026-09-21：P6 异常边界收口
+
+- 任务：验证上传、持久化和前端媒体加载失败时的工程恢复行为。
+- AI 建议：把失败路径作为面试验收的一等公民，优先固定错误码、请求追踪、回滚和重试入口，而不是增加业务端点。
+- 人工确认：人工检查了 `IMAGE_PARSE_FAILED`、`UPLOAD_TOO_LARGE`、`PERSISTENCE_FAILED` 及前端 fallback 的测试证据；没有接入真实 AI，也没有生成诊断或治疗建议。
+- 最终结果：P6 只增强可见性、可记录性和可恢复性，素材评审结论仍必须由人工确认。
+
 ## 记录原则
 
 每条重要记录包含：任务、AI 建议、人工验证、修改/拒绝、最终结果和证据。
@@ -57,3 +91,42 @@
 - 拒绝“一开始实现完整 DICOM 阅片器”：超出题目边界，改为安全元数据与单张预览。
 - 拒绝“立即接入真实大模型”：不能直接证明核心价值，会增加密钥和可用性风险；改为记录研发 AI 使用，产品内 AI 在本次 MVP 中明确为 Out，未来必须重新验证价值和医疗边界后才能立项。
 - 延后“立即安装 PostgreSQL、Nginx、Docker”：开发期 SQLite 足够；部署工具待产品门禁通过且 WSL2 条件就绪后再引入。
+
+## 2026-09-21: P4 backend vertical slice
+
+- Task: implement the first backend loop for project, case, asset upload, review, and review-board retrieval.
+- AI suggestion: focus on the vertical review loop first and defer tags, advanced filters, comparison, annotation CRUD, preview streaming, and reprocess until the core loop has test evidence.
+- Human/product constraint: the user explicitly requested strict interview scope control and product thinking. The implementation therefore avoids clinical diagnosis, real AI, real authentication, and broad endpoint expansion.
+- Modification/rejection: the P2 design listed a larger API surface. This slice intentionally rejected implementing every endpoint immediately because that would dilute the primary user problem and make verification weaker.
+- Final result: added SQLAlchemy models, Alembic migration, repository/service/route layers, asset ingestion, stable business errors, and P4 API tests.
+- Evidence: `ruff check`, `mypy app tests`, `pytest -q`, `alembic upgrade head`, and `alembic downgrade base` passed for the backend.
+
+## 2026-09-21: P4 asset validation hardening
+
+- Task: continue P4 by improving file validation, DICOM privacy behavior, STL handling, and bounded asset filtering.
+- AI suggestion: add trust-building evidence before adding more endpoints, because the interview requirement values safe file handling and medical boundary control more than broad CRUD surface.
+- Human/product constraint: keep the primary review loop intact and avoid starting P5 UI or full viewer work early.
+- Modification/rejection: rejected full tag/search/comparison implementation in this slice; implemented only `kind` and `status` filters because they directly support the review list.
+- Final result: added DICOM allowlist/privacy tests, STL parser metadata and corrupt-STL error, asset filters, and upload log privacy assertions.
+- Evidence: `scripts/check.ps1` passed; API pytest now covers 15 tests.
+
+## 2026-09-21: P4 preview/model read endpoints
+
+- Task: continue P4 by adding backend read endpoints for generated previews and STL models.
+- AI suggestion: implement only the read endpoints needed by P5, and defer `reprocess` plus annotation CRUD to avoid expanding the backend beyond the current interview proof.
+- Human/product constraint: stay centered on the case asset review loop and preserve privacy controls around original filenames.
+- Final result: added `/assets/{asset_id}/preview`, `/assets/{asset_id}/model`, stable unavailable/missing-file errors, and tests for successful and unavailable paths.
+- Evidence: `scripts/check.ps1` passed; API pytest now covers 17 tests.
+## 2026-09-21 P4 收口整改：同步上传与 DICOM 白名单
+
+- AI 参与：审阅上传路由的同步/异步边界，并对照 DICOM 白名单文档与运行时代码。
+- 人工决策：将上传端点改为同步函数，避免在 `async` 事件处理器中直接执行同步解析、预览生成和磁盘 I/O；移除 `StudyDescription`、`SeriesDescription` 的响应输出，因为它们是自由文本。
+- 验证方式：pytest 覆盖敏感描述字段不出现在 `metadata_summary`，并通过完整 `scripts/check.ps1`。
+- 医疗边界：没有调用真实 AI、没有生成诊断或治疗建议；这里只做隐私最小化和工程并发边界修复。
+
+## 2026-09-21 P5 前端主流程与性能优化
+
+- AI 参与：根据 P5 门禁审阅页面路由、查询缓存、STL 加载和 E2E 验收范围。
+- 人工决策：只实现项目→病例→素材→评审闭环；Three.js 改为懒加载；演示数据只读取仓库内合成/清理样例；标签全文检索、并排比较、标注 CRUD 和真实权限继续延期。
+- 验证方式：前端 lint、Vitest、TypeScript build 通过；Playwright 主流程和 API 失败流程已使用本机 Chrome 通道执行通过（2 passed）。
+- 医疗边界：界面只表达素材状态和工程评审结论，不输出诊断、治疗建议或患者身份信息。

@@ -10,6 +10,7 @@ from starlette import status
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.api.routes.health import router as health_router
+from app.api.routes.workbench import router as workbench_router
 from app.domain.errors import ApiError
 from app.observability.logging import AccessLogMiddleware, configure_logging
 from app.observability.request_id import RequestIdMiddleware, get_request_id
@@ -144,6 +145,7 @@ def create_app() -> FastAPI:
         )
 
     app.include_router(health_router, prefix="/api/v1")
+    app.include_router(workbench_router, prefix="/api/v1")
     return app
 
 

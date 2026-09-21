@@ -1,8 +1,8 @@
 :root {
-  color: #1f2933;
-  background: #f6f8fb;
-  font-family:
-    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: #1f2937;
+  background: #f2f5fa;
+  font-family: "Inter", "PingFang SC", "Microsoft YaHei", ui-sans-serif, system-ui, -apple-system,
+    BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
 * {
@@ -11,10 +11,355 @@
 
 body {
   margin: 0;
+  background: #f2f5fa;
 }
 
 button,
 input,
 textarea {
   font: inherit;
+}
+
+/* ---------- shell ---------- */
+
+.app-shell {
+  min-height: 100vh;
+  background: #f2f5fa;
+}
+
+.app-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  height: 64px;
+  padding: 0 32px;
+  background: linear-gradient(90deg, #0f2744, #14385f);
+  box-shadow: 0 1px 8px rgba(15, 39, 68, 0.18);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #fff;
+  text-decoration: none;
+  margin-right: auto;
+}
+
+.brand-mark {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.14);
+  color: #7db4ff;
+  font-size: 18px;
+}
+
+.brand-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.brand-text em {
+  font-style: normal;
+  font-size: 12px;
+  font-weight: 400;
+  color: #9fb8d6;
+}
+
+.env-tag {
+  margin: 0;
+  padding: 3px 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #bcd2ec;
+  font-size: 12px;
+}
+
+.app-content {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 32px 24px 56px;
+}
+
+.app-footer {
+  padding: 20px 24px 32px;
+  text-align: center;
+  color: #8a9bb0;
+  font-size: 12px;
+}
+
+/* ---------- page heading ---------- */
+
+.page-heading {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.page-heading-main {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.page-heading h2 {
+  margin: 0;
+  font-size: 24px;
+}
+
+.page-heading p {
+  margin: 6px 0 0;
+}
+
+.heading-action {
+  margin-left: auto;
+}
+
+.state-block {
+  display: grid;
+  place-items: center;
+  padding: 48px 0;
+}
+
+/* ---------- project / case grids ---------- */
+
+.project-grid,
+.case-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.project-card,
+.case-card {
+  border-radius: 12px;
+  border: 1px solid #e6ecf5;
+  box-shadow: 0 1px 2px rgba(16, 42, 67, 0.04);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.project-card:hover,
+.case-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgba(16, 42, 67, 0.1);
+}
+
+.project-card-title,
+.case-card-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #102a43;
+  margin-bottom: 8px;
+}
+
+.project-card-desc,
+.case-card-desc {
+  min-height: 40px;
+  color: #627d98;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.project-card-foot {
+  margin-top: 18px;
+  color: #9fb3c8;
+  font-size: 12px;
+}
+
+.case-card-action {
+  padding-left: 0;
+  margin-top: 8px;
+}
+
+/* ---------- board summary ---------- */
+
+.board-summary {
+  margin-bottom: 20px;
+  border-radius: 12px;
+  border: 1px solid #e6ecf5;
+  background: linear-gradient(180deg, #ffffff, #f8fbff);
+}
+
+.board-summary-row {
+  display: flex;
+  align-items: center;
+  gap: 48px;
+}
+
+.board-summary-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: #102a43;
+  line-height: 1.1;
+}
+
+.board-summary-label {
+  color: #829ab1;
+  font-size: 12px;
+}
+
+.board-summary-progress {
+  flex: 1;
+  min-width: 200px;
+}
+
+/* ---------- asset cards ---------- */
+
+.asset-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+}
+
+.asset-card {
+  border-radius: 12px;
+  border: 1px solid #e6ecf5;
+  box-shadow: 0 1px 2px rgba(16, 42, 67, 0.04);
+}
+
+.asset-card-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.asset-card-title {
+  flex: 1;
+  min-width: 0;
+  font-weight: 600;
+  color: #102a43;
+}
+
+.asset-card-title > div:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.asset-icon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  color: #fff;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.asset-icon.image {
+  background: linear-gradient(135deg, #3b82f6, #1677ff);
+}
+.asset-icon.dicom {
+  background: linear-gradient(135deg, #14b8a6, #0d9488);
+}
+.asset-icon.stl {
+  background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+}
+
+.asset-card-meta {
+  margin-bottom: 14px;
+}
+
+/* ---------- asset detail ---------- */
+
+.asset-detail {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(300px, 0.85fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.preview-card {
+  grid-row: span 2;
+  border-radius: 12px;
+  border: 1px solid #e6ecf5;
+  min-height: 480px;
+}
+
+.metadata-card,
+.review-card {
+  border-radius: 12px;
+  border: 1px solid #e6ecf5;
+}
+
+.asset-preview {
+  display: block;
+  max-width: 100%;
+  max-height: 560px;
+  margin: 0 auto;
+  object-fit: contain;
+  border-radius: 8px;
+  background: #0b1f33;
+}
+
+.warning-item {
+  margin-top: 12px;
+}
+
+/* ---------- 3D viewer ---------- */
+
+.stl-viewer {
+  height: 540px;
+  border-radius: 10px;
+  overflow: hidden;
+  position: relative;
+  background: radial-gradient(circle at 50% 35%, #17324f, #0a1a2b 70%);
+}
+
+.stl-viewer canvas {
+  height: calc(100% - 40px) !important;
+}
+
+.stl-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 12px;
+  color: #c9d8e8;
+}
+
+.viewer-fallback {
+  min-height: 320px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  border-radius: 10px;
+  background: #fff1f0;
+  color: #cf1322;
+}
+
+/* ---------- responsive ---------- */
+
+@media (max-width: 900px) {
+  .app-header {
+    padding: 0 16px;
+  }
+  .env-tag {
+    display: none;
+  }
+  .app-content {
+    padding: 24px 16px 40px;
+  }
+  .asset-detail {
+    grid-template-columns: 1fr;
+  }
+  .preview-card {
+    grid-row: auto;
+  }
+  .board-summary-row {
+    flex-wrap: wrap;
+    gap: 24px;
+  }
 }

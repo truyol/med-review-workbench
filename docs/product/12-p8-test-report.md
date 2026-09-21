@@ -1,0 +1,126 @@
+# P8 测试与证据报告
+
+状态：收口完成（2026-09-21）
+
+## 1. 结论
+
+P8 门禁通过。快速检查和完整检查均实际执行成功；核心“项目 → 病例 → 素材 → 评审 → 看板”闭环同时具备 API 集成测试、前端组件测试、Mock E2E 和 Docker 真实后端 E2E 证据。
+
+本结论只覆盖当前已实现范围。结构标记、标签 CRUD/筛选、图片并排比较、真实鉴权、持久化审计表、reprocess 和 PostgreSQL 生产验证没有被测试结果包装成“已通过”，详见第 6 节。
+
+## 2. 环境与命令
+
+| 项目 | 实际环境 |
+|---|---|
+| 日期 | 2026-09-21 |
+| 宿主系统 | Windows / PowerShell |
+| Python | 3.11.9 |
+| Node.js / npm | 24.14.0 / 11.18.0 |
+| Docker | 29.8.0 |
+| 浏览器 | 本机 Chrome 通道，由 Playwright 驱动 |
+| 应用运行 | Docker Compose；Nginx `http://127.0.0.1:8080`；API/Web healthy |
+| 默认数据库 | SQLite 持久卷；PostgreSQL 仅保留切换路径 |
+
+快速开发门禁：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\check.ps1
+```
+
+P8 完整门禁：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\check-full.ps1
+```
+
+完整门禁会启动并等待 Compose、执行容器 seed、覆盖率、真实后端 E2E、运行日志隐私扫描和依赖审计。测试迁移使用临时 SQLite 文件，不会升降级开发数据库。
+
+## 3. 实际结果
+
+| 层级 | 结果 | 证据摘要 |
+|---|---|---|
+| Python 静态检查 | 通过 | Ruff、Mypy 通过 |
+| API 单元/集成 | 25 passed | 覆盖业务闭环、文件解析、异常边界、日志、seed、备份恢复和隐私扫描 |
+| API 覆盖率 | 89% | 904 statements，103 missed；关键路由 96%、领域错误 97%、主应用 98%、repository 95% |
+| 数据库迁移 | 通过 | 隔离临时库执行 upgrade、downgrade，不污染运行数据库 |
+| Web 静态/构建 | 通过 | ESLint、TypeScript/Vite 生产构建通过 |
+| Web 组件 | 3 passed | 页面工作区、四种状态映射、可恢复错误提示 |
+| Web 覆盖率 | 语句 36.17%；分支 42.85%；函数 21.31%；行 78.04% | 如实记录，不设置虚假覆盖率门槛 |
+| Playwright | 4 passed | 2 条 Mock 流程 + 2 条 Docker 真实后端流程 |
+| 异常 E2E | 通过 | API abort 可恢复提示；真实后端不支持格式返回稳定提示与下一步 |
+| 隐私日志扫描 | 通过 | 修复后复验扫描 Docker API 日志 62 行，敏感模式命中 0 |
+| Python 依赖审计 | 通过 | `pip-audit` 无已知漏洞；两个本地项目包因不在 PyPI 被明确跳过 |
+| Node 生产依赖审计 | 通过 | `npm audit --omit=dev --audit-level=high`：0 vulnerabilities |
+
+真实后端 E2E 不是 `page.route` Mock：浏览器通过 Nginx 调用容器 API，实际创建项目/病例、上传合成 PNG、提交评审并校验看板；异常流实际上传不支持文件并检查用户下一步。
+
+## 4. FR/NFR 追溯
+
+| 需求 | P8 判定 | 自动化/运行证据 |
+|---|---|---|
+| FR-001 项目与病例 | 通过 | API 闭环测试；真实后端 E2E 经 UI 创建项目和病例 |
+| FR-002 素材归档 | 通过（当前支持范围） | DICOM/STL/PNG/JPEG 上传与判型测试；真实 E2E 上传合成 PNG |
+| FR-003 UUID/大小/哈希/格式 | 通过 | API 上传集成测试与真实 E2E |
+| FR-004 卡片状态与备注 | 部分通过 | 四状态组件映射和评审备注已验证；标签尚未实现 |
+| FR-005 DICOM 安全元数据/预览 | 通过 | 白名单、身份字段抑制、无 Pixel Data/预览降级测试 |
+| FR-006 STL 交互/结构标记 | 部分通过 | 查看器具备旋转、缩放、平移、复位；结构标记未实现，WebGL 操作未自动化 |
+| FR-007 评审持久化 | 通过 | API 集成测试；真实 E2E 提交后查询看板确认 `accepted` |
+| FR-008 类型/状态/标签筛选 | 部分通过 | API 支持类型和状态；标签及完整前端筛选未实现 |
+| FR-009 图片浏览/并排比较/整理 | 部分通过 | 单图预览和评审整理可用；双图选择、并排比较和标签整理未实现 |
+| FR-010 异常可解释 | 通过 | P6 API 边界测试、前端错误组件、Mock/真实异常 E2E |
+| FR-011 可追踪且不泄露的日志 | 通过 | request_id 测试；运行日志扫描 54 行、0 命中 |
+| NFR-002 SQLite/PostgreSQL 路径 | 部分通过 | SQLite 迁移、持久卷、备份恢复已验证；PostgreSQL 仅文档化，未生产验证 |
+| NFR-006 DICOM 白名单 | 通过 | 白名单单测、敏感描述字段抑制、日志隐私扫描 |
+
+## 5. P8 门禁核对
+
+- [x] 单元、集成、前端组件和 Playwright 主流程通过。
+- [x] 至少一条异常 E2E 通过；本次包含 Mock abort 和真实不支持格式两条。
+- [x] 运行日志隐私扫描通过，且扫描器本身有正反样例单测。
+- [x] Python 与 Node 生产依赖安全检查通过或明确解释跳过项。
+- [x] 报告包含环境、范围、实际结果、需求追溯和已知风险。
+- [x] `scripts/check-full.ps1` 一键执行完整门禁并最终输出 `Full P8 gate passed.`。
+
+### 修复后复验记录
+
+针对 Mock E2E 的宽泛文本定位和未拦截预览请求，已将“白名单元数据”改为严格精确匹配，并为 `/api/v1/assets/asset-1/preview` 返回可解码的合成 PNG，同时断言图片 `naturalWidth > 0`。修复后于 2026-09-21 重新执行完整门禁，真实输出为：
+
+```text
+4 passed (9.8s)
+Privacy scan passed: scanned_lines=62 findings=0
+No known vulnerabilities found
+found 0 vulnerabilities
+Full P8 gate passed.
+```
+
+## 6. 已知风险与延期项
+
+以下项目不会阻塞 P8“验证现有能力”的退出，但属于面试题原始 Must 的未闭合项；必须在 P9 文档一致性检查中明确，并在 P10 前决定补齐或以范围差异说明接受：
+
+1. **结构标记未实现**：FR-006 仅完成 STL 查看和视角操作。
+2. **标签与完整筛选未实现**：FR-004/FR-008 的标签 CRUD、标签筛选及前端筛选入口缺失。
+3. **图片并排比较未实现**：FR-009 只有单图浏览和评审整理，尚不能选择两张图片并排对照。
+4. **真实权限、持久化审计表、reprocess、标注 CRUD 延期**：它们不是当前闭环的隐藏“伪完成项”。
+5. **PostgreSQL 未作生产验证**：仅验证了可选驱动/配置边界和 SQLite 运维路径。
+6. **前端覆盖深度有限**：行覆盖率 78.04%，但语句和函数覆盖率较低；真实 E2E 只覆盖主链与一个真实异常。
+7. **STL/WebGL 操作缺少自动化交互断言**：查看器加载失败有兜底，但旋转/缩放/平移/复位仍依赖人工演示确认。
+8. **非阻塞技术债**：FastAPI/Starlette TestClient 有上游弃用警告；Vite 仍提示大 chunk；`pip-audit` 无法审计不在 PyPI 的两个本地包。
+
+## 7. 医疗与 AI 边界
+
+- 测试只使用合成图片、明确清理的本地样例或测试内生成数据，不接入真实患者系统。
+- 隐私扫描是工程保护证据，不等同于临床级去标识化认证，也不能证明像素中不存在烧录文字。
+- 产品没有接入真实 AI；评审状态和备注由人工提交、人工确认。
+- 本系统是术前规划素材工程评审工具，不输出诊断、治疗建议或自动分割结果。
+
+## 8. 2026-09-21 整改记录
+
+演示验收时发现四类问题，已修复并复验：
+
+1. **演示库被测试数据污染**：`live-review-flow.spec.ts` 每次运行新建带时间戳项目，且与演示共用同一持久卷。整改：`check-full.ps1` 改用隔离 Compose 项目 `medreview-p8-gate` + 端口 `18080`，结束后 `down -v` 销毁；新增 `scripts/reset-demo.ps1` 清理历史脏数据。规范见 `docs/engineering/demo-and-test-data.md`。
+2. **STL 视图空白**：查看器未做模型居中与相机自适应，真实心脏模型落在视锥外。整改：`StlViewer` 使用 `geometry.center()` + drei `<Bounds fit clip observe>`，并新增"视角复位"重新适配。
+3. **UI 观感与开发残留**：移除顶栏 `P5 前端` 开发标签，重做布局/主题/卡片/资产详情，启用中文 locale，关闭 AntD 按钮自动空格。
+4. **E2E 断言脆弱**：mock 用例因 P6 新增兜底 Alert 文案与卡片标题重复触发 strict mode 冲突；AntD 中文按钮自动空格导致 `查看`/`确定` 文本选择器失效。整改：断言改为 `{ exact: true }` 或 `.ant-modal-footer .ant-btn-primary`，并关闭按钮自动空格。
+
+整改后 `scripts/check-full.ps1` 实测输出 `Full P8 gate passed.`（4 条 Playwright 通过），且运行后演示卷中仍只有 `Demo - SHD preoperative asset review` 一个项目。
+

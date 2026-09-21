@@ -1,0 +1,64 @@
+name: med-review-workbench
+
+services:
+  api:
+    build:
+      context: ../apps/api
+      dockerfile: Dockerfile
+      args:
+        INSTALL_POSTGRES: ${INSTALL_POSTGRES:-false}
+    environment:
+      APP_ENV: container
+      APP_LOG_LEVEL: ${APP_LOG_LEVEL:-INFO}
+      APP_DATABASE_URL: sqlite:////data/medreview.db
+      APP_STORAGE_ROOT: /data/uploads
+      APP_PREVIEW_ROOT: /data/previews
+      APP_MAX_UPLOAD_MB: ${APP_MAX_UPLOAD_MB:-100}
+      APP_ALLOWED_ORIGINS: '[]'
+    volumes:
+      - medreview_data:/data
+      - ../sample-data:/sample-data:ro
+    expose:
+      - "8000"
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/v1/health/ready', timeout=3)"
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 15s
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+
+  web:
+    build:
+      context: ..
+      dockerfile: apps/web/Dockerfile
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "${WEB_PORT:-8080}:8080"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /var/cache/nginx
+      - /var/run
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  medreview_data:

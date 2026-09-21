@@ -38,6 +38,18 @@ Follow this stage order exactly:
 - Errors expose a stable code and request ID, never stack traces.
 - Add or update tests and documentation with every vertical slice.
 
+## Data isolation
+
+- Automated tests must never write into the demo stack. Use the isolated gate project (`medreview-p8-gate`, port `18080`) and tear it down with `down -v`; see `docs/engineering/demo-and-test-data.md`.
+- Do not mix the host database (`apps/api/var/`) with the container volume (`/data`); stored preview/model paths are environment-specific.
+- Keep demo data reproducible through `scripts/reset-demo.ps1` and `seed_demo`.
+
+## UI conventions
+
+- AntD button auto-inserted spaces are disabled project-wide; keep button text exactly as written.
+- Prefer stable selectors (roles, `.ant-modal-footer .ant-btn-primary`) over locale-dependent text in tests.
+
+
 ## AI-assisted work
 
 - Record material AI assistance in `docs/engineering/ai-usage.md`.

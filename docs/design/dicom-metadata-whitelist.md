@@ -53,3 +53,18 @@
 - 单元测试必须覆盖白名单过滤。
 - 日志扫描必须确认不包含禁止字段。
 - UI 快照不得出现患者身份相关字段。
+
+## P4 可执行策略（覆盖候选表中的冲突项）
+
+代码以 `apps/api/app/services/asset_processing.py` 的 `DICOM_METADATA_ALLOWLIST` 为唯一运行时来源。当前 API 实际返回的展示字段只有：
+
+- `Modality`
+- `BodyPartExamined`
+- `SOPClassUID`
+- `Rows`
+- `Columns`
+- `NumberOfFrames`
+
+`StudyDescription` 和 `SeriesDescription` 虽然可帮助工程调试，但属于自由文本，可能包含临床描述或临时身份线索，因此在 P4 中明确不进入响应、日志或前端展示。`PatientName`、`PatientID`、日期、机构、医生、原始文件名和完整 tag dump 同样禁止输出。
+
+这份 P4 策略优先于本文早期的“候选字段”列表；新增字段必须同时更新代码、测试和本文，并经过隐私复核。

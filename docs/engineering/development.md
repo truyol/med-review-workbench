@@ -14,6 +14,7 @@
 
 - 变化关联需求编号或说明基础设施目的。
 - `powershell -ExecutionPolicy Bypass -File .\scripts\check.ps1` 通过。
+- 涉及测试或演示数据的改动，遵循 `docs/engineering/demo-and-test-data.md`：自动化测试使用隔离门禁栈，不得写入演示栈。
 - 数据库可从空库迁移。
 - 无密钥、数据库、上传文件、预览或日志进入 Git。
 - 文档与实际行为同步。

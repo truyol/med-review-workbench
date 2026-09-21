@@ -8,6 +8,10 @@
 
 ---
 
+## P6 异常边界补充
+
+P6 对既有上传和读取链路增加稳定失败契约：损坏图片使用 `IMAGE_PARSE_FAILED`（422），数据库提交失败使用 `PERSISTENCE_FAILED`（500）并回滚，超限上传使用 `UPLOAD_TOO_LARGE`（413）。前端对 STL 和图片加载失败提供错误提示与重试入口；这些机制不改变医疗边界，也不替代人工确认。
+
 ## 1. 设计目标与约束
 
 - 交付一个**可运行的模块化单体**，优先打通「病例素材评审闭环」。
@@ -513,7 +517,7 @@ P3/P4 必测补充：
 - 已存在评审历史的资产执行 DELETE 返回 `DELETE_RESTRICTED`。
 - DICOM 元数据可读但像素解码失败时返回 `DICOM_DECODE_UNSUPPORTED`，且仍可展示白名单元数据。
 - 上传失败后临时文件与预览半成品被清理。
-- `POST /assets/{asset_id}/reprocess` 可重建 metadata/preview，失败时不破坏旧记录。
+- `POST /assets/{asset_id}/reprocess` is a deferred P6 acceptance item; it is not part of the P4 exit gate. When implemented, it must rebuild metadata/preview without corrupting the prior record.
 
 ---
 
@@ -538,3 +542,48 @@ P3/P4 必测补充：
 - [x] 技术取舍 ADR 与需求追溯
 - [x] 人工评审确认（用户已确认，可进入 P3）
 - [x] P2 复审整改：压缩 DICOM、服务端判型、软删除、唯一约束、统一错误、reprocess、权限/审计边界
+
+## 16. P4 implementation note
+
+The first P4 implementation follows the vertical-slice strategy rather than building every endpoint from the P2 design at once.
+
+Implemented in this slice:
+
+- Tables: `projects`, `cases`, `assets`, `reviews`.
+- Layering: `routes -> services -> repositories -> models`.
+- Endpoints: project/case creation and listing, case asset upload/listing, asset review creation, case review board, and guarded asset deletion.
+- Asset processing: service-side type detection, size limit, SHA256, UUID storage path, PNG/JPEG preview generation, DICOM allowlist metadata extraction, and degraded DICOM preview warnings.
+- Error codes added to executable paths: `PROJECT_NOT_FOUND`, `CASE_NOT_FOUND`, `ASSET_NOT_FOUND`, `CASE_CODE_CONFLICT`, `UNSUPPORTED_ASSET_TYPE`, `UPLOAD_TOO_LARGE`, `DELETE_RESTRICTED`.
+- Tests: closed-loop API path, duplicate case code conflict, unsupported upload, reviewed-asset delete restriction, plus existing P3 health/error/CORS tests.
+
+Deferred from this slice:
+
+- Tags and advanced filters.
+- Side-by-side image comparison.
+- Annotation CRUD.
+- Preview/model streaming endpoints.
+- Reprocess endpoint.
+- Audit events table and role authorization enforcement.
+
+Rationale: these features matter for the final interview scope, but the first P4 milestone should prove the core backend loop with executable evidence before expanding surface area.
+
+### 16.1 P4 asset validation update
+
+The second backend slice keeps the same API surface but improves file trust:
+
+- DICOM: tests generate a minimal DICOM fixture, assert allowlist fields such as `modality` and `sop_class_uid`, withhold `PatientName`/`PatientID`, and degrade cleanly when no pixel data exists.
+- STL: parser accepts valid binary or ASCII STL, records `encoding` and `triangle_count`, and rejects corrupt content with `MODEL_PARSE_FAILED`.
+- Asset list filters: `kind` and `status` are implemented because they support the core review workflow without introducing broader tagging/search complexity.
+- Privacy: upload logs are tested to avoid original filenames and DICOM identity values.
+
+Still deferred at this point: side-by-side image comparison, annotation CRUD, reprocess, audit table persistence, and role authorization. Preview/model streaming is covered in 16.2.
+
+### 16.2 P4 preview/model read endpoints
+
+Preview and model streaming are implemented in P4 because P5 needs real backend assets to render:
+
+- `GET /api/v1/assets/{asset_id}/preview`: streams generated PNG previews only.
+- `GET /api/v1/assets/{asset_id}/model`: streams stored STL model content only.
+- `PREVIEW_NOT_AVAILABLE`, `MODEL_NOT_AVAILABLE`, and `ASSET_FILE_MISSING` keep failure paths stable and traceable.
+
+Still deferred after this update: `reprocess`, annotation CRUD, audit-event persistence, real role authorization, and side-by-side image comparison.
