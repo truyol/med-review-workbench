@@ -1,6 +1,6 @@
 # 技术架构（P2 输入草案）
 
-文档状态：Superseded by `TECH_DESIGN.md`（保留为 P2 输入记录）。  
+文档状态：已由根目录 `TECH_DESIGN.md` 取代（仅保留为 P2 输入记录，不代表当前实现）。
 说明：P2 的完整技术设计见仓库根目录 [`TECH_DESIGN.md`](../../TECH_DESIGN.md)，本文仅保留早期架构想法作为背景。
 
 ## 决策原则

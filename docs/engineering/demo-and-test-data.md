@@ -11,7 +11,7 @@
 | 演示栈 | `med-review-workbench` | `med-review-workbench_medreview_data` | `8080` | 人工演示、录屏、验收 |
 | P8 门禁栈 | `medreview-p8-gate` | `medreview-p8-gate_medreview_data` | `18080` | 自动化测试专用 |
 
-**硬性规则**：任何自动化测试（Playwright E2E、seed、脚本）**不得写入演示栈**。`scripts/check-full.ps1` 通过 `docker compose -p medreview-p8-gate` + `WEB_PORT=18080` 使用隔离栈，并在 `finally` 中以 `down -v` 彻底销毁（含卷）。
+**硬性规则**：自动化门禁与测试（尤其是会创建临时项目的 Playwright E2E）**不得写入演示栈**。显式执行的 `seed_demo` 和人工演示操作是演示栈的预期写入，不属于这条禁令。`scripts/check-full.ps1` 通过 `docker compose -p medreview-p8-gate` + `WEB_PORT=18080` 使用隔离栈，并在 `finally` 中以 `down -v` 彻底销毁（含卷）。
 
 ## 2. 为什么必须隔离
 

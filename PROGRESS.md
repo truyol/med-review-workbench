@@ -1,4 +1,4 @@
-# Project progress
+# 项目进度
 
 最后更新：2026-09-21
 项目根目录：仓库根目录（本地路径不进入公开文档）
@@ -13,15 +13,15 @@
 | P5 前端 | 收口完成 | 核心页面、状态和 3D/DICOM 交互达到需求验收 | `docs/product/09-p5-frontend-acceptance.md` |
 | P6 异常/边界 | 收口完成 | 损坏、缺失、伪造、超限、保存失败等路径有明确处理 | `docs/product/10-p6-boundary-acceptance.md` |
 | P7 运维化 | 收口完成 | Docker Compose、Nginx、配置、健康检查和运维说明完成 | `docs/product/11-p7-operations-acceptance.md`；`docs/engineering/ops.md` |
-| P8 测试 | 收口完成 | 单元、集成、E2E、隐私扫描与测试报告通过 | API 29/92%、组件 3、Playwright 9、日志扫描 127 行零命中；`scripts/check-full.ps1` 输出 `Full P8 gate passed.` |
+| P8 测试 | 收口完成 | 单元、集成、E2E、隐私扫描与测试报告通过 | API 31/92%、组件 3、Playwright 9、日志扫描 131 行零命中；`scripts/check-full.ps1` 输出 `Full P8 gate passed.` |
 | P9 文档 | 收口完成 | README、PRD、设计、部署、AI 使用和演示材料一致 | 数字与历史版本已核对；见 `docs/product/14-p9-documentation-acceptance.md` |
-| P10 交付验收 | 进行中 | 新环境可复现，五分钟演示和交付清单全部通过 | 独立克隆复现、克隆内真实后端 E2E 通过（最新 9 条）、重启持久性与 request_id 排障已复核；剩余人工五分钟演示与面试官设备复现，见 `DELIVERY_CHECKLIST.md` |
+| P10 交付验收 | 进行中 | 新环境可复现，五分钟演示和交付清单全部通过 | 旧版独立克隆 7 条 E2E 曾通过；新版隔离门禁 9 条通过，非同一次克隆证据；重启持久性与 request_id 排障曾复核。剩余人工五分钟演示与面试官设备复现，见 `DELIVERY_CHECKLIST.md` |
 
 ## 当前决策
 
 - 使用小型单仓库；开发期使用 SQLite，本地文件系统保存素材；生产演进目标为 PostgreSQL。
 - 演示与测试使用**隔离的 Compose 环境**：演示栈 `med-review-workbench`（端口 8080），门禁栈 `medreview-p8-gate`（端口 18080，用完连卷销毁）。规范见 `docs/engineering/demo-and-test-data.md`。
-- 演示库重置入口：`scripts/reset-demo.ps1`；全新克隆由 seed 生成非临床 DICOM/STL fallback，不依赖私有 `DEMO SET`。
+- 演示库重置入口：`scripts/reset-demo.ps1`；全新克隆由 seed 生成非临床 DICOM phantom，并读取仓库内有 CC BY 4.0 署名的心脏参考 STL，不依赖私有 `DEMO SET`。STL 缺失时才回退到合成曲管。
 - 宿主机数据库与容器卷不可混用（预览/模型记录创建时的绝对路径）。
 - 面试题要求的图片浏览/筛选/比较/整理已作为 Must 实现，样例为两张可提交的非临床合成 PNG。
 - DICOM 演示使用 `prepare-dicom-samples.py` 生成的本地清理副本，原始样例不直接进入应用或演示。

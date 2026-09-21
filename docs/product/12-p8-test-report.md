@@ -40,15 +40,15 @@ powershell -ExecutionPolicy Bypass -File .\scripts\check-full.ps1
 | 层级 | 结果 | 证据摘要 |
 |---|---|---|
 | Python 静态检查 | 通过 | Ruff、Mypy 通过 |
-| API 单元/集成 | 29 passed | 覆盖业务闭环、文件解析、异常边界、标签/备注、结构标记、日志、seed、备份恢复和隐私扫描 |
+| API 单元/集成 | 31 passed | 覆盖业务闭环、文件解析、异常边界、标签/备注、结构标记、日志、seed、心脏 STL 文件哈希/解析、备份恢复和隐私扫描 |
 | API 覆盖率 | 92% | 1063 statements，87 missed；关键路由 97%、领域错误 97%、主应用 98%、repository 96% |
 | 数据库迁移 | 通过 | 隔离临时库执行 upgrade、downgrade，不污染运行数据库 |
 | Web 静态/构建 | 通过 | ESLint、TypeScript/Vite 生产构建通过 |
 | Web 组件 | 3 passed | 页面工作区、四种状态映射、可恢复错误提示 |
-| Web 覆盖率 | 语句 40.65%；分支 39.31%；函数 27.83%；行 40.00% | 如实记录，复杂交互主要由真实后端 E2E 覆盖；不设置虚假覆盖率门槛 |
+| Web 覆盖率 | 语句 38.72%；分支 37.19%；函数 25.96%；行 38.30% | 如实记录，复杂交互主要由真实后端 E2E 覆盖；不设置虚假覆盖率门槛 |
 | Playwright | 9 passed | 2 条 Mock 流程 + 7 条 Docker 真实后端流程（主链、异常、标签、比较、结构标记、删除） |
 | 异常 E2E | 通过 | API abort 可恢复提示；真实后端不支持格式返回稳定提示与下一步 |
-| 隐私日志扫描 | 通过 | 最新隔离门禁扫描 Docker API 日志 127 行，敏感模式命中 0 |
+| 隐私日志扫描 | 通过 | 最新隔离门禁扫描 Docker API 日志 131 行，敏感模式命中 0 |
 | Python 依赖审计 | 通过 | `pip-audit` 无已知漏洞；本地项目包 `medreview-api` 因不在 PyPI 被明确跳过 |
 | Node 生产依赖审计 | 通过 | `npm audit --omit=dev --audit-level=high`：0 vulnerabilities |
 
@@ -59,16 +59,16 @@ powershell -ExecutionPolicy Bypass -File .\scripts\check-full.ps1
 | 需求 | P8 判定 | 自动化/运行证据 |
 |---|---|---|
 | FR-001 项目与病例 | 通过 | API 闭环测试；真实后端 E2E 经 UI 创建项目和病例 |
-| FR-002 素材归档 | 通过（当前支持范围） | DICOM/STL/PNG/JPEG 上传与判型测试；真实 E2E 上传合成 PNG |
-| FR-003 UUID/大小/哈希/格式 | 通过 | API 上传集成测试与真实 E2E |
-| FR-004 卡片状态与备注 | 通过 | 四状态映射；素材级标签与备注可编辑（`PATCH /assets/{id}`）并展示在卡片上 |
+| FR-002 素材归档与来源 | 部分通过 | DICOM/STL/PNG/JPEG 上传与判型可用；逐素材来源/许可/脱敏状态未入库，只有通用类别与仓库样例登记 |
+| FR-003 UUID/大小/哈希/格式 | 通过（API） | API 上传集成测试验证完整字段；卡片仅显示类型、大小与哈希前缀，不宣称完整 UUID/哈希均在卡片可见 |
+| FR-004 状态、标签与备注 | 部分通过 | 四状态映射，标签与状态在列表可见；备注在详情编辑/回看，逐素材来源不是业务字段 |
 | FR-005 DICOM 安全元数据/预览 | 通过 | 白名单、身份字段抑制、无 Pixel Data/预览降级测试 |
 | FR-006 STL 交互/结构标记 | 通过 | 旋转/缩放/平移/复位；点击模型放置结构标记并持久化；E2E 覆盖标记落库 |
-| FR-007 评审持久化 | 通过 | API 集成测试；真实 E2E 提交后查询看板确认 `accepted` |
+| FR-007 评审持久化 | 部分通过 | 决定、可选备注、评审人、时间保存并可回看；原 PRD 的必填文本与独立问题摘要/下一步未实现 |
 | FR-008 类型/状态/标签筛选 | 通过 | API 与前端均支持类型、状态、标签筛选 |
 | FR-009 图片浏览/并排比较/整理 | 通过 | 单图预览、双图并排比较、标签/状态整理与结论沉淀；真实后端 E2E 断言左右为不同且可解码的预览 |
 | FR-010 异常可解释 | 通过 | P6 API 边界测试、前端错误组件、Mock/真实异常 E2E |
-| FR-011 可追踪且不泄露的日志 | 通过 | request_id 测试；最新运行日志扫描 127 行、0 命中 |
+| FR-011 可追踪且不泄露的日志 | 通过 | request_id 测试；最新运行日志扫描 131 行、0 命中 |
 | NFR-002 SQLite/PostgreSQL 路径 | 部分通过 | SQLite 迁移、持久卷、备份恢复已验证；PostgreSQL 仅文档化，未生产验证 |
 | NFR-006 DICOM 白名单 | 通过 | 白名单单测、敏感描述字段抑制、日志隐私扫描 |
 
@@ -120,15 +120,23 @@ powershell -ExecutionPolicy Bypass -File .\scripts\check-full.ps1
 3. **交付截图**：`docs/screenshots/` 由 `apps/web/scripts/capture-screenshots.mjs` 从运行中的演示栈生成，并在 README 中引用。
 4. **审计健壮性**：`check-full.ps1` 对 Python/Node 依赖审计增加 3 次重试，缓解网络抖动。
 
-## 10. 公开仓库交付前复验（2026-09-21）
+## 10. 公开仓库交付前复验（2026-09-21，历史轮次）
 
 - 从原始 Word 面试题重新核对 Must：项目/病例/素材、图片浏览筛选比较整理、DICOM 读取、STL 操作、异常、文档、AI 与医疗边界。
-- 修复全新克隆缺少 DICOM/STL 的演示缺口：seed 在外部样例缺席时确定性生成非临床 DICOM phantom 和曲管 STL；单测验证三类素材、DICOM 预览与幂等性。
+- 该轮修复全新克隆缺少 DICOM/STL 的演示缺口：当时 seed 在外部样例缺席时生成非临床 DICOM phantom 和曲管 STL；后续默认 STL 已改为仓库内的心脏参考模型，见第 12 节。
 - 该轮隔离完整门禁及随后双图比较补测均通过；当前交付数字统一见第 3、11 节。
 
-## 11. 双图比较交付前复验（2026-09-21，最新）
+## 11. 双图比较交付前复验（2026-09-21，历史轮次）
 
 - 比较弹窗的两侧选项改为安全标签/素材短 ID，不暴露原始文件名；已经选到左侧的素材不再出现在右侧可选列表，反之亦然。
 - 新增真实后端 Playwright：上传仓库内第二张合成 PNG，在比较弹窗选择两张不同图片，断言左右预览均解码成功且 `src` 不同。
-- 最新完整门禁：API `29 passed`、覆盖率 `92%`；Web 组件 `3 passed`，语句/分支/函数/行覆盖率分别为 `40.65% / 39.31% / 27.83% / 40.00%`；Playwright `9 passed`；隐私扫描 `scanned_lines=127 findings=0`；Python 依赖无已知漏洞，Node 生产依赖 `0 vulnerabilities`；最终输出 `Full P8 gate passed.`，并销毁隔离栈和卷。
+- 该轮完整门禁：API `29 passed`、覆盖率 `92%`；Web 组件 `3 passed`，语句/分支/函数/行覆盖率分别为 `40.65% / 39.31% / 27.83% / 40.00%`；Playwright `9 passed`；隐私扫描 `scanned_lines=127 findings=0`；Python 依赖无已知漏洞，Node 生产依赖 `0 vulnerabilities`；最终输出 `Full P8 gate passed.`，并销毁隔离栈和卷。
 - 追加真实后端 E2E：素材删除（未评审可删、看板清空）与比较弹窗列出 DICOM/STL 选项；同时修复 nginx 构建产物目录与前端 `/assets/:assetId` 路由冲突（构建产物改到 `/static/`）。
+
+## 12. 心脏参考 STL 与文档复核（2026-09-21，最新）
+
+- 完整门禁重新执行，隔离 Compose API/Web 均 healthy；容器 seed 成功，Playwright `9 passed (13.6s)`，结束后隔离卷已移除。
+- API `31 passed`、覆盖率 `92%`；新增测试验证 seed 优先选用仓库内心脏 STL，并核对文件大小、SHA-256 与 85,914 个三角面的二进制结构。
+- Web 组件 `3 passed`；语句/分支/函数/行覆盖率分别为 `38.72% / 37.19% / 25.96% / 38.30%`，低覆盖率如实保留为风险。
+- 隐私日志扫描 `scanned_lines=131 findings=0`；Python 依赖审计无已知漏洞（本地项目包因不在 PyPI 跳过），Node 生产依赖审计 `0 vulnerabilities`；脚本输出 `Full P8 gate passed.`。
+- 本轮验证的是自动化与隔离测试环境，不等于面试官设备复现或人工五分钟录屏；功能范围差异按第 4 节和交付复核文档披露。

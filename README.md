@@ -59,7 +59,7 @@ node scripts\capture-screenshots.mjs
 ## 已实现功能
 
 - 项目 → 病例 → 素材三级结构；素材在病例上下文中可追溯。
-- 素材上传与**服务端判型**（DICOM / STL / PNG / JPEG），记录 UUID、大小、SHA256、来源。
+- 素材上传与**服务端判型**（DICOM / STL / PNG / JPEG），记录 UUID、大小、SHA256 与通用来源类别；逐素材来源/许可/脱敏状态字段尚未实现。
 - **图片**：缩略图浏览、类型/状态/标签筛选、标签与备注整理。
 - **素材并排比较**：图片/DICOM 并排缩略图，STL 并排 3D 视图。
 - **DICOM**：白名单元数据、缩略图、多帧识别、无像素/解码失败降级。
@@ -266,7 +266,7 @@ powershell -ExecutionPolicy Bypass -File .\scripts\check-full.ps1
 ## 当前已知限制
 
 - DICOM 清理脚本只处理 demo 的直接身份标签、私有标签和 UID，不等同于临床级去标识化，也不证明像素中没有烧录文字。
-- Rubo DICOM 仅用于本地评价，不随仓库分发；全新克隆可使用运行时生成的非临床 DICOM/STL fallback 演示基础功能。
+- Rubo DICOM 仅用于本地评价，不随仓库分发；全新克隆默认使用运行时生成的非临床 DICOM phantom 和仓库内有 CC BY 4.0 署名的心脏参考 STL。
 - 测试存在来自 FastAPI/Starlette TestClient 依赖的弃用警告；不影响当前测试结果，待上游兼容版本稳定后升级。
 - 前端已按 vendor 拆分：应用主包约 54KB，`antd` / `react` 独立成可缓存 vendor chunk，`three.js` 仅在进入 STL 详情时加载。
 - 真实鉴权、持久化审计表、reprocess、标注批量编辑和 PostgreSQL 生产验证仍在延期范围，详见 `docs/product/12-p8-test-report.md` 与 `PROGRESS.md`。
@@ -277,7 +277,7 @@ powershell -ExecutionPolicy Bypass -File .\scripts\check-full.ps1
 
 - 项目：`POST/GET /projects`
 - 病例：`POST/GET /projects/{project_id}/cases`
-- 素材：`POST/GET /cases/{case_id}/assets`、`GET/PATCH/DELETE /assets/{asset_id}`
+- 素材：`POST/GET /cases/{case_id}/assets`、`PATCH/DELETE /assets/{asset_id}`
 - 素材读取：`GET /assets/{asset_id}/preview`、`GET /assets/{asset_id}/model`
 - 结构标记：`POST/GET /assets/{asset_id}/annotations`、`DELETE /annotations/{annotation_id}`
 - 评审：`POST /assets/{asset_id}/reviews`、`GET /cases/{case_id}/review-board`
@@ -290,3 +290,5 @@ powershell -ExecutionPolicy Bypass -File .\scripts\check-full.ps1
 - STL 二进制/ASCII 校验并记录三角面数量；
 - 素材列表支持 `kind` / `status` / `tag` 过滤；
 - 上传响应与日志不包含原始文件名或 DICOM 身份值。
+
+范围提示：`source_label` 目前仅是服务端生成的素材类别，不是逐素材来源登记；许可与清理状态只对仓库样例在 `sample-data/README.md` 留档。评审持久化的是决定、备注、评审人和时间，问题摘要/下一步尚无独立业务字段；项目/病例详情及更新接口、独立评审历史接口尚未实现。详见 [技术设计](TECH_DESIGN.md)。

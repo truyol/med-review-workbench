@@ -31,4 +31,4 @@
 - [x] P5 阶段将 STL/Three.js viewer 动态拆包；交付版本进一步拆出 vendor，应用主包约 54KB
 - [x] `scripts/seed-demo.py` 补充可复现的 seed/demo 数据入口
 
-P5 当时的 Playwright 主流程和异常流程曾在本机 Chrome 通道通过。交付版的现行数量和覆盖范围见 P8 测试报告（最新 7 条）；配置使用 `channel: "chrome"`，不依赖 Playwright 自带 Chromium 下载。
+P5 当时的 Playwright 主流程和异常流程曾在本机 Chrome 通道通过。交付版的现行数量和覆盖范围以 P8 测试报告为准；配置使用 `channel: "chrome"`，不依赖 Playwright 自带 Chromium 下载。

@@ -1,70 +1,32 @@
 # DICOM 元数据白名单
 
-文档状态：Approved for P2  
-更新时间：2026-09-20
+文档状态：当前运行时契约（2026-09-21）。唯一实现来源是 `apps/api/app/services/asset_processing.py` 中的 `DICOM_METADATA_ALLOWLIST`；早期 P2 的“12 字段最终白名单”是**未落地的历史提案**，不能用于介绍当前 API。
 
-## 目的
+## 目的与当前响应
 
-只展示能帮助工程评审的低敏字段，避免把患者身份信息、完整标签集合或原始文件内容暴露到界面、日志和测试快照中。
+只返回工程评审所需的有限字段，不把患者身份信息、自由文本描述、完整标签集合或原始文件名送到页面和日志。当前字段位于素材响应的 `metadata_summary` 对象中，键名是下表的 `snake_case`；前端直接展示键和值。**没有**单独的 DICOM 元数据接口，也没有后端返回的 `keyword + label + value` 三元组。
 
-## 初始白名单候选
-
-| DICOM Tag | Keyword | 用途 |
+| DICOM 字段 | 响应键 | 用途 |
 |---|---|---|
-| `(0008,0060)` | `Modality` | 判断影像类型，例如 CT/XA/MR |
-| `(0028,0010)` | `Rows` | 图像高度 |
-| `(0028,0011)` | `Columns` | 图像宽度 |
-| `(0028,0008)` | `NumberOfFrames` | 判断单帧或多帧文件 |
-| `(0028,0002)` | `SamplesPerPixel` | 预览生成所需基础信息 |
-| `(0028,0004)` | `PhotometricInterpretation` | 预览生成所需基础信息 |
-| `(0028,0100)` | `BitsAllocated` | 预览生成所需基础信息 |
-| `(0028,0101)` | `BitsStored` | 预览生成所需基础信息 |
-| `(0028,0102)` | `HighBit` | 预览生成所需基础信息 |
-| `(0028,0103)` | `PixelRepresentation` | 预览生成所需基础信息 |
-| `(0002,0010)` | `TransferSyntaxUID` | 判断解码方式 |
+| `Modality` | `modality` | 影像模态，如 CT/XA |
+| `BodyPartExamined` | `body_part_examined` | 检查部位；演示 phantom 为 `PHANTOM` |
+| `SOPClassUID` | `sop_class_uid` | SOP 类别 |
+| `Rows` | `rows` | 图像行数 |
+| `Columns` | `columns` | 图像列数 |
+| `NumberOfFrames` | `number_of_frames` | 单文件多帧数量，字段存在时才返回 |
 
-## 默认禁止展示
+当前总数是 **6 个候选键**，不是保证每份文件都返回 6 项；未存在的标签不补造。像素可用时生成单张 PNG 缩略图；无 `PixelData` 或解码失败时保留已取出的白名单元数据，在 `ingest_warnings` 说明预览不可用。该行为不是完整 DICOM 阅片，也不表示素材已通过临床级脱敏。
 
-- `PatientName`
-- `PatientID`
-- `PatientBirthDate`
-- `PatientSex`
-- `InstitutionName`
-- `ReferringPhysicianName`
-- `StudyDescription`
-- `SeriesDescription`
-- 原始文件名
-- 完整 DICOM tag dump
+## 明确不展示
 
-## P2 决策结论
+`PatientName`、`PatientID`、`PatientBirthDate`、`InstitutionName`、`ReferringPhysicianName`、`StudyDescription`、`SeriesDescription`、`StudyDate`、`SeriesDate`、`ImageType`、传输语法细节、完整 DICOM 标签转储及原始文件名均不在展示白名单。`StudyDescription`/`SeriesDescription` 等自由文本可能携带身份或临床信息。解析器检测到 `PatientName` 或 `PatientID` 时只写通用警告，不把值写入响应或日志。
 
-- **时间字段**：`StudyDate`、`SeriesDate` 默认不展示，避免任何可关联身份的时间线索；如后续需要，必须先定义脱敏策略。
-- **`SOPClassUID`**：加入白名单，用于判断 SOP 类别（工程评审需要）。
-- **`ImageType`**：暂不加入，MVP 无明确评审用途。
-- **前端展示**：使用中文 label，由后端返回 `keyword + label + value`，前端不自行映射。
-- **集中定义**：白名单在后端 `media/dicom.py` 集中定义，前端不得直接展示未过滤的 DICOM 元数据。
+## P2 提案与当前实现的差异
 
-## 最终白名单
+P2 曾考虑 `SamplesPerPixel`、`PhotometricInterpretation`、`BitsAllocated`、`BitsStored`、`HighBit`、`PixelRepresentation`、`TransferSyntaxUID` 等解析辅助字段，并设想由后端返回中文 label。P4 隐私复核后把展示集合收紧为上表 6 项；辅助字段即使被解析用于像素处理，也不因此进入公开响应。今后新增字段必须同时修改代码、测试和本文，并复核自由文本与身份关联风险。
 
-在上述候选基础上新增 `SOPClassUID`，共 12 个字段；其余候选维持。`StudyDate`、`SeriesDate`、`ImageType` 不展示。
+## 验收边界
 
-## 验收要求
-
-- 单元测试必须覆盖白名单过滤。
-- 日志扫描必须确认不包含禁止字段。
-- UI 快照不得出现患者身份相关字段。
-
-## P4 可执行策略（覆盖候选表中的冲突项）
-
-代码以 `apps/api/app/services/asset_processing.py` 的 `DICOM_METADATA_ALLOWLIST` 为唯一运行时来源。当前 API 实际返回的展示字段只有：
-
-- `Modality`
-- `BodyPartExamined`
-- `SOPClassUID`
-- `Rows`
-- `Columns`
-- `NumberOfFrames`
-
-`StudyDescription` 和 `SeriesDescription` 虽然可帮助工程调试，但属于自由文本，可能包含临床描述或临时身份线索，因此在 P4 中明确不进入响应、日志或前端展示。`PatientName`、`PatientID`、日期、机构、医生、原始文件名和完整 tag dump 同样禁止输出。
-
-这份 P4 策略优先于本文早期的“候选字段”列表；新增字段必须同时更新代码、测试和本文，并经过隐私复核。
+- API 测试验证只返回白名单键，并且不泄露 `PatientName`、`PatientID`。
+- 日志扫描验证请求记录不包含患者身份值、原始文件名或完整标签集合。
+- 本地 DICOM 清理脚本只处理已知标签和 UID；像素烧录文字需要人工检查，不能用“白名单展示”代替去标识化认证。
