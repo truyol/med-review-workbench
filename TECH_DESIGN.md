@@ -65,7 +65,7 @@ Nginx ──► FastAPI 路由 ──► WorkbenchService ──► WorkbenchRep
 - 图片：允许 PNG/JPEG，Pillow 解码并生成 PNG 缩略图；损坏时返回 `IMAGE_PARSE_FAILED`（422）。
 - STL：校验二进制长度/三角面数或 ASCII facet 结构，记录编码与三角面数；损坏时返回 `MODEL_PARSE_FAILED`（422）。目前不计算包围盒、不生成 3D 缩略图。前端通过模型流加载，并提供旋转、缩放、平移、复位与结构标记；加载失败应显示重试提示。
 - DICOM：pydicom 解析，输出限定白名单（模态、检查部位、SOP 类 UID、行列数、帧数）；直接身份标签不进入响应。存在可解码像素时生成缩略图；缺少像素或压缩解码失败时保留元数据并记录 `ingest_warnings`，预览不可用，不冒充上传失败。白名单细节见 [DICOM 元数据白名单](docs/design/dicom-metadata-whitelist.md)。
-- 存储：文件以 UUID 命名写入 `APP_STORAGE_ROOT`，缩略图写入 `APP_PREVIEW_ROOT`；数据库保存创建时的路径（容器配置为绝对路径，本地默认配置可为相对路径）。解析失败会清理已写文件及半成品预览。**当前数据库提交失败虽会回滚，但已写入的上传文件可能遗留**，这是待收口风险，不能称为完整事务性文件落库。
+- 存储：文件以 UUID 命名写入 `APP_STORAGE_ROOT`，缩略图写入 `APP_PREVIEW_ROOT`；数据库保存创建时的路径（容器配置为绝对路径，本地默认配置可为相对路径）。解析失败会清理已写文件及半成品预览。**仓储层新增/更新提交失败会回滚数据库，但已写入的上传文件可能遗留；删除路径先删除文件再直接提交数据库，也可能在提交失败时出现文件/DB 不一致**。这些是待收口风险，不能称为完整事务性文件落库。
 
 日志禁止患者姓名、患者 ID、请求正文、原始文件名及完整 DICOM 标签。仅显示白名单不等同于临床级去标识化；样例 DICOM 清理脚本也不能证明像素不存在烧录文字，录屏前须人工检查。默认演示 DICOM 是无患者来源的合成 phantom；仓库内的心脏参考 STL 是独立模型，**不是** phantom 或任何病例的重建，不用于临床判断。
 
@@ -82,7 +82,7 @@ Nginx ──► FastAPI 路由 ──► WorkbenchService ──► WorkbenchRep
 | 422 | `IMAGE_PARSE_FAILED`、`MODEL_PARSE_FAILED` | 图片或 STL 内容无法解析 |
 | 500 | `PERSISTENCE_FAILED`、`INTERNAL_ERROR` | 持久化或未预期错误 |
 
-`AccessLogMiddleware` 在异常路径也记录完成事件，包含状态、耗时及 request_id；错误日志不返回堆栈给客户端。存活和就绪检查用于容器健康探测与排障。配置通过 `.env.example` 中的 `APP_*` 环境变量提供；Docker Compose 与备份/恢复步骤见 [运维手册](docs/engineering/ops.md)。
+`AccessLogMiddleware` 在异常路径也记录完成事件，包含状态、耗时及 request_id；错误日志不返回堆栈给客户端。`PERSISTENCE_FAILED` 只覆盖走仓储 `_commit()` 的写路径，**不覆盖当前直接提交的删除路径**。存活和就绪检查用于容器健康探测与排障。配置通过 `.env.example` 中的 `APP_*` 环境变量提供；Docker Compose 与备份/恢复步骤见 [运维手册](docs/engineering/ops.md)。
 
 验证分层为 API 单元/集成测试、Alembic 升降级冒烟、前端静态检查/组件测试/生产构建、隔离 Docker 栈真实后端 Playwright、日志隐私扫描及依赖审计。日常运行 `scripts/check.ps1`，交付前运行 `scripts/check-full.ps1`。门禁栈与演示栈必须隔离，具体证据与历史轮次见 [P8 测试报告](docs/product/12-p8-test-report.md)；自动化通过不替代五分钟人工录屏。
 
