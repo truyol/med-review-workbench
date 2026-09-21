@@ -95,6 +95,8 @@ node scripts\capture-screenshots.mjs
 - [隐私与安全](docs/engineering/privacy-and-security.md)
 - [真实医疗软件场景能力差距](docs/engineering/real-world-readiness.md)
 - [AI 使用记录](docs/engineering/ai-usage.md)
+- [环境准备记录](docs/engineering/environment.md)
+- [演示与测试数据规范](docs/engineering/demo-and-test-data.md)
 - [项目进度](PROGRESS.md)
 - [P4 后端收口验收清单](docs/product/08-p4-backend-acceptance.md)
 - [P5 前端验收清单](docs/product/09-p5-frontend-acceptance.md)

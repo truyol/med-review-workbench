@@ -1,4 +1,4 @@
-# P8 测试与证据报告
+﻿# P8 测试与证据报告
 
 状态：收口完成（2026-09-21）
 
@@ -87,7 +87,7 @@ powershell -ExecutionPolicy Bypass -File .\scripts\check-full.ps1
 
 ## 6. 已知风险与延期项
 
-以下项目不会阻塞 P8“验证现有能力”的退出。原先列出的“结构标记、标签、图片并排比较”三个 Must 已在 2026-09-21 补齐（见第 8 节），剩余项须在 P10 前决定补齐或以范围差异说明接受：
+以下项目不会阻塞 P8“验证现有能力”的退出。原先列出的“结构标记、标签、图片并排比较”三个 必须 已在 2026-09-21 补齐（见第 8 节），剩余项须在 P10 前决定补齐或以范围差异说明接受：
 
 1. **真实权限、持久化审计表、reprocess、标注批量编辑延期**：它们不是当前闭环的隐藏“伪完成项”。
 2. **PostgreSQL 未作生产验证**：仅验证了可选驱动/配置边界和 SQLite 运维路径。
@@ -115,14 +115,14 @@ powershell -ExecutionPolicy Bypass -File .\scripts\check-full.ps1
 
 ## 9. 2026-09-21 功能补齐与交付材料
 
-1. **三个 Must 需求补齐**：素材标签/备注（`PATCH /assets/{id}` + 标签筛选）、STL 结构标记（`annotations` CRUD + 点击模型放置）、图片并排比较。迁移 `0003_tags_annotations`；最新测试数量见第 3、11 节。
+1. **三个 必须 需求补齐**：素材标签/备注（`PATCH /assets/{id}` + 标签筛选）、STL 结构标记（`annotations` CRUD + 点击模型放置）、图片并排比较。迁移 `0003_tags_annotations`；最新测试数量见第 3、11 节。
 2. **前端拆包**：应用主包由约 946KB 降至约 54KB，`antd`/`react` 拆为可缓存 vendor chunk，`three.js` 仅在 STL 详情加载。
 3. **交付截图**：`docs/screenshots/` 由 `apps/web/scripts/capture-screenshots.mjs` 从运行中的演示栈生成，并在 README 中引用。
 4. **审计健壮性**：`check-full.ps1` 对 Python/Node 依赖审计增加 3 次重试，缓解网络抖动。
 
 ## 10. 公开仓库交付前复验（2026-09-21，历史轮次）
 
-- 从原始 Word 面试题重新核对 Must：项目/病例/素材、图片浏览筛选比较整理、DICOM 读取、STL 操作、异常、文档、AI 与医疗边界。
+- 从原始 Word 面试题重新核对 必须：项目/病例/素材、图片浏览筛选比较整理、DICOM 读取、STL 操作、异常、文档、AI 与医疗边界。
 - 该轮修复全新克隆缺少 DICOM/STL 的演示缺口：当时 seed 在外部样例缺席时生成非临床 DICOM phantom 和曲管 STL；后续默认 STL 已改为仓库内的心脏参考模型，见第 12 节。
 - 该轮隔离完整门禁及随后双图比较补测均通过；当前交付数字统一见第 3、11 节。
 
@@ -140,3 +140,4 @@ powershell -ExecutionPolicy Bypass -File .\scripts\check-full.ps1
 - Web 组件 `3 passed`；语句/分支/函数/行覆盖率分别为 `38.72% / 37.19% / 25.96% / 38.30%`，低覆盖率如实保留为风险。
 - 隐私日志扫描 `scanned_lines=131 findings=0`；Python 依赖审计无已知漏洞（本地项目包因不在 PyPI 跳过），Node 生产依赖审计 `0 vulnerabilities`；脚本输出 `Full P8 gate passed.`。
 - 本轮验证的是自动化与隔离测试环境，不等于面试官设备复现或人工五分钟录屏；功能范围差异按第 4 节和交付复核文档披露。
+
