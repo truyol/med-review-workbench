@@ -45,9 +45,9 @@ P8 测试与证据已通过，P9 文档一致性已收口，当前进行 P10 交
 |---|---|
 | ![项目工作台](docs/screenshots/01-projects.png) | ![病例列表](docs/screenshots/02-cases.png) |
 
-| 病例评审看板 | 图片预览 | 3D 模型与结构标记 |
-|---|---|---|
-| ![评审看板](docs/screenshots/03-review-board.png) | ![图片预览](docs/screenshots/04-image-preview.png) | ![3D 查看器](docs/screenshots/05-stl-viewer.png) |
+| 病例评审看板 | 图片预览 | DICOM 白名单预览 | 3D 模型与结构标记 |
+|---|---|---|---|
+| ![评审看板](docs/screenshots/03-review-board.png) | ![图片预览](docs/screenshots/04-image-preview.png) | ![DICOM 预览](docs/screenshots/05-dicom-preview.png) | ![3D 查看器](docs/screenshots/06-stl-viewer.png) |
 
 截图由 `apps/web/scripts/capture-screenshots.mjs` 从运行中的演示栈自动生成：
 

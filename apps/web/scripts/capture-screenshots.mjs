@@ -48,11 +48,20 @@ async function main() {
   }
 
   const stlCard = page.locator(".asset-card", { hasText: "STL review asset" });
+  const dicomCard = page.locator(".asset-card", { hasText: "DICOM review asset" });
+  if (await dicomCard.count()) {
+    await dicomCard.first().getByRole("button", { name: "查看" }).click();
+    await page.waitForSelector(".asset-preview");
+    await shot("05-dicom-preview.png");
+    await page.goBack();
+    await page.waitForSelector(".asset-card");
+  }
+
   if (await stlCard.count()) {
     await stlCard.first().getByRole("button", { name: "查看" }).click();
     await page.waitForSelector(".stl-viewer canvas");
     await page.waitForTimeout(2500); // allow the model to load and frame
-    await shot("05-stl-viewer.png");
+    await shot("06-stl-viewer.png");
   }
 
   await browser.close();
