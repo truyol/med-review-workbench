@@ -46,9 +46,9 @@ powershell -ExecutionPolicy Bypass -File .\scripts\check-full.ps1
 | Web 静态/构建 | 通过 | ESLint、TypeScript/Vite 生产构建通过 |
 | Web 组件 | 3 passed | 页面工作区、四种状态映射、可恢复错误提示 |
 | Web 覆盖率 | 语句 40.65%；分支 39.31%；函数 27.83%；行 40.00% | 如实记录，复杂交互主要由真实后端 E2E 覆盖；不设置虚假覆盖率门槛 |
-| Playwright | 7 passed | 2 条 Mock 流程 + 5 条 Docker 真实后端流程（主链、异常、标签、双图比较、结构标记） |
+| Playwright | 9 passed | 2 条 Mock 流程 + 7 条 Docker 真实后端流程（主链、异常、标签、比较、结构标记、删除） |
 | 异常 E2E | 通过 | API abort 可恢复提示；真实后端不支持格式返回稳定提示与下一步 |
-| 隐私日志扫描 | 通过 | 最新隔离门禁扫描 Docker API 日志 105 行，敏感模式命中 0 |
+| 隐私日志扫描 | 通过 | 最新隔离门禁扫描 Docker API 日志 127 行，敏感模式命中 0 |
 | Python 依赖审计 | 通过 | `pip-audit` 无已知漏洞；本地项目包 `medreview-api` 因不在 PyPI 被明确跳过 |
 | Node 生产依赖审计 | 通过 | `npm audit --omit=dev --audit-level=high`：0 vulnerabilities |
 
@@ -68,7 +68,7 @@ powershell -ExecutionPolicy Bypass -File .\scripts\check-full.ps1
 | FR-008 类型/状态/标签筛选 | 通过 | API 与前端均支持类型、状态、标签筛选 |
 | FR-009 图片浏览/并排比较/整理 | 通过 | 单图预览、双图并排比较、标签/状态整理与结论沉淀；真实后端 E2E 断言左右为不同且可解码的预览 |
 | FR-010 异常可解释 | 通过 | P6 API 边界测试、前端错误组件、Mock/真实异常 E2E |
-| FR-011 可追踪且不泄露的日志 | 通过 | request_id 测试；最新运行日志扫描 105 行、0 命中 |
+| FR-011 可追踪且不泄露的日志 | 通过 | request_id 测试；最新运行日志扫描 127 行、0 命中 |
 | NFR-002 SQLite/PostgreSQL 路径 | 部分通过 | SQLite 迁移、持久卷、备份恢复已验证；PostgreSQL 仅文档化，未生产验证 |
 | NFR-006 DICOM 白名单 | 通过 | 白名单单测、敏感描述字段抑制、日志隐私扫描 |
 
@@ -130,4 +130,5 @@ powershell -ExecutionPolicy Bypass -File .\scripts\check-full.ps1
 
 - 比较弹窗的两侧选项改为安全标签/素材短 ID，不暴露原始文件名；已经选到左侧的素材不再出现在右侧可选列表，反之亦然。
 - 新增真实后端 Playwright：上传仓库内第二张合成 PNG，在比较弹窗选择两张不同图片，断言左右预览均解码成功且 `src` 不同。
-- 最新完整门禁：API `29 passed`、覆盖率 `92%`；Web 组件 `3 passed`，语句/分支/函数/行覆盖率分别为 `40.65% / 39.31% / 27.83% / 40.00%`；Playwright `7 passed (10.5s)`；隐私扫描 `scanned_lines=105 findings=0`；Python 依赖无已知漏洞，Node 生产依赖 `0 vulnerabilities`；最终输出 `Full P8 gate passed.`，并销毁隔离栈和卷。
+- 最新完整门禁：API `29 passed`、覆盖率 `92%`；Web 组件 `3 passed`，语句/分支/函数/行覆盖率分别为 `40.65% / 39.31% / 27.83% / 40.00%`；Playwright `9 passed`；隐私扫描 `scanned_lines=127 findings=0`；Python 依赖无已知漏洞，Node 生产依赖 `0 vulnerabilities`；最终输出 `Full P8 gate passed.`，并销毁隔离栈和卷。
+- 追加真实后端 E2E：素材删除（未评审可删、看板清空）与比较弹窗列出 DICOM/STL 选项；同时修复 nginx 构建产物目录与前端 `/assets/:assetId` 路由冲突（构建产物改到 `/static/`）。

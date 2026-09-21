@@ -22,6 +22,7 @@ import {
   Input,
   Layout,
   Modal,
+  Popconfirm,
   Progress,
   Result,
   Select,
@@ -51,6 +52,7 @@ import {
   createCase,
   createProject,
   deleteAnnotation,
+  deleteAsset,
   fetchAnnotations,
   fetchCases,
   fetchProjects,
@@ -330,52 +332,67 @@ function ProjectPage() {
 function CompareModal({
   open,
   onClose,
-  images,
+  assets,
 }: {
   open: boolean;
   onClose: () => void;
-  images: Asset[];
+  assets: Asset[];
 }) {
   const [left, setLeft] = useState<string | undefined>();
   const [right, setRight] = useState<string | undefined>();
-  const options = images.map((asset) => ({
+  const options = assets.map((asset) => ({
     value: asset.id,
-    label: `${asset.tags.length > 0 ? asset.tags.join("、") : asset.source_label} · ${asset.id.slice(0, 8)}`,
+    label: `${kindLabel[asset.kind]} · ${asset.tags.length > 0 ? asset.tags.join("、") : asset.source_label} · ${asset.id.slice(0, 8)}`,
   }));
-  const leftAsset = images.find((asset) => asset.id === left);
-  const rightAsset = images.find((asset) => asset.id === right);
+  const leftAsset = assets.find((asset) => asset.id === left);
+  const rightAsset = assets.find((asset) => asset.id === right);
+
+  const renderPane = (asset: Asset | undefined, side: string) => {
+    if (!asset) {
+      return <Empty description={`选择${side}素材`} />;
+    }
+    if (asset.kind === "stl") {
+      return (
+        <Suspense
+          fallback={
+            <div className="state-block">
+              <Spin tip="正在加载 3D 查看器" />
+            </div>
+          }
+        >
+          <StlViewer assetId={asset.id} markers={[]} onPlaceMarker={() => undefined} />
+        </Suspense>
+      );
+    }
+    if (asset.preview_available) {
+      return <img src={assetPreviewUrl(asset.id)} alt={`${side}素材`} />;
+    }
+    return <Empty description="该素材无预览" />;
+  };
 
   return (
-    <Modal title="图片并排比较" open={open} onCancel={onClose} footer={null} width={920}>
+    <Modal title="素材并排比较" open={open} onCancel={onClose} footer={null} width={1000}>
       <Space style={{ marginBottom: 16 }}>
         <Select
-          placeholder="选择左侧图片"
-          aria-label="左侧图片"
-          style={{ width: 280 }}
+          placeholder="选择左侧素材"
+          aria-label="左侧素材"
+          style={{ width: 320 }}
           options={options.filter((option) => option.value !== right)}
           value={leftAsset?.id}
           onChange={setLeft}
         />
         <Select
-          placeholder="选择右侧图片"
-          aria-label="右侧图片"
-          style={{ width: 280 }}
+          placeholder="选择右侧素材"
+          aria-label="右侧素材"
+          style={{ width: 320 }}
           options={options.filter((option) => option.value !== left)}
           value={rightAsset?.id}
           onChange={setRight}
         />
       </Space>
       <div className="compare-grid">
-        {leftAsset ? (
-          <img src={assetPreviewUrl(leftAsset.id)} alt="左侧素材" />
-        ) : (
-          <Empty description="选择左侧图片" />
-        )}
-        {rightAsset ? (
-          <img src={assetPreviewUrl(rightAsset.id)} alt="右侧素材" />
-        ) : (
-          <Empty description="选择右侧图片" />
-        )}
+        {renderPane(leftAsset, "左侧")}
+        {renderPane(rightAsset, "右侧")}
       </div>
     </Modal>
   );
@@ -416,7 +433,7 @@ function CasePage() {
       (!statusFilter || asset.status === statusFilter) &&
       (!tagFilter || asset.tags.includes(tagFilter)),
   );
-  const images = assets.map((item) => item.asset).filter((asset) => asset.kind === "image");
+  const comparableAssets = assets.map((item) => item.asset);
   const reviewed = assets.filter((item) => item.asset.status !== "pending").length;
   const percent = assets.length === 0 ? 0 : Math.round((reviewed / assets.length) * 100);
 
@@ -429,7 +446,7 @@ function CasePage() {
         <Space>
           <Button
             icon={<SwapOutlined />}
-            disabled={images.length < 2}
+            disabled={comparableAssets.length < 2}
             onClick={() => setCompareOpen(true)}
           >
             并排比较
@@ -556,7 +573,7 @@ function CasePage() {
           )}
         </>
       )}
-      <CompareModal open={compareOpen} onClose={() => setCompareOpen(false)} images={images} />
+      <CompareModal open={compareOpen} onClose={() => setCompareOpen(false)} assets={comparableAssets} />
     </Page>
   );
 }
@@ -615,12 +632,14 @@ function AssetPage() {
 
 function AssetDetail({ asset, caseId }: { asset: Asset; caseId: string }) {
   const client = useQueryClient();
+  const navigate = useNavigate();
   const [imageFailed, setImageFailed] = useState(false);
   const [reviewForm] = Form.useForm<{ decision: Review["decision"]; note?: string; reviewer_name: string }>();
   const [organizeForm] = Form.useForm<{ tags: string[]; note?: string }>();
   const [markerForm] = Form.useForm<{ label: string }>();
   const [pendingMarker, setPendingMarker] = useState<MarkerPoint | null>(null);
   const [messageApi, contextHolder] = message.useMessage();
+  const { message: globalMessage } = AntApp.useApp();
 
   const annotations = useQuery({
     queryKey: ["annotations", asset.id],
@@ -656,6 +675,15 @@ function AssetDetail({ asset, caseId }: { asset: Asset; caseId: string }) {
   const deleteMarkerMutation = useMutation({
     mutationFn: (annotationId: string) => deleteAnnotation(annotationId),
     onSuccess: () => client.invalidateQueries({ queryKey: ["annotations", asset.id] }),
+  });
+  const deleteAssetMutation = useMutation({
+    mutationFn: () => deleteAsset(asset.id),
+    onSuccess: () => {
+      client.invalidateQueries({ queryKey: ["review-board", caseId] });
+      globalMessage.success("素材已删除");
+      navigate(`/cases/${caseId}`);
+    },
+    onError: (error) => messageApi.error(error instanceof ApiError ? error.nextAction : "删除失败"),
   });
 
   const markers = annotations.data ?? [];
@@ -791,6 +819,20 @@ function AssetDetail({ asset, caseId }: { asset: Asset; caseId: string }) {
             保存评审
           </Button>
         </Form>
+      </Card>
+
+      <Card title="危险操作" className="review-card" variant="borderless">
+        <Popconfirm
+          title="确认删除该素材？"
+          description="已评审的素材不能硬删除；删除后不可恢复。"
+          okText="删除"
+          okButtonProps={{ danger: true }}
+          onConfirm={() => deleteAssetMutation.mutate()}
+        >
+          <Button danger block loading={deleteAssetMutation.isPending}>
+            删除素材
+          </Button>
+        </Popconfirm>
       </Card>
 
       <Modal

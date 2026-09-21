@@ -44,5 +44,6 @@ export const updateAsset = (assetId: string, payload: { tags?: string[]; note?: 
 export const fetchAnnotations = (assetId: string) => api<Annotation[]>(`/assets/${assetId}/annotations`);
 export const createAnnotation = (assetId: string, payload: { label: string; data: Record<string, number>; note?: string | null }) => api<Annotation>(`/assets/${assetId}/annotations`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
 export const deleteAnnotation = (annotationId: string) => api<void>(`/annotations/${annotationId}`, { method: "DELETE" });
+export const deleteAsset = (assetId: string) => api<void>(`/assets/${assetId}`, { method: "DELETE" });
 export const assetPreviewUrl = (assetId: string) => `/api/v1/assets/${assetId}/preview`;
 export const assetModelUrl = (assetId: string) => `/api/v1/assets/${assetId}/model`;

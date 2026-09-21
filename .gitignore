@@ -32,6 +32,13 @@ sample-data/stl/*
 !sample-data/**/.gitkeep
 !sample-data/image/synthetic-cardiac-ct-baseline.png
 !sample-data/image/synthetic-cardiac-ct-annotated.png
+!sample-data/stl/vh-f-heart.stl
+!sample-data/stl/ATTRIBUTION.md
+
+# Obsidian vaults accidentally created inside the repo
+.obsidian/
+demo/
+项目/
 
 # Editors and OS
 .DS_Store

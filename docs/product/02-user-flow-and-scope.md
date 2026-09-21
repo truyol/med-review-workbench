@@ -72,7 +72,7 @@
 
 1. 打开工作台，进入“结构性心脏病术前讨论 Demo 项目”。
 2. 创建脱敏病例 `DEMO-TAVR-001`。
-3. 在全新克隆中使用 seed 的合成 PNG、DICOM phantom 和 STL 曲管；上传第二张合成 PNG。清理后的公开 DICOM 或题目 STL 可按 README 另行准备，Rubo 96 帧样例不是默认交付素材。
+3. 在全新克隆中使用 seed 的合成 PNG、DICOM phantom 和已署名 CC BY 4.0 的心脏参考 STL；上传第二张合成 PNG。心脏模型不是该 DICOM 的病例重建。清理后的公开 DICOM 或题目 STL 可按 README 另行准备，Rubo 96 帧样例不是默认交付素材。
 4. 浏览并筛选图片，选择基线图与标注图并排比较，用标签、状态和备注整理。
 5. 查看 DICOM phantom 的安全元数据和缩略图；如另行取得 Rubo 样例，再验证多帧单文件。
 6. 打开 3D 模型，完成旋转、缩放、平移、复位和结构标记。

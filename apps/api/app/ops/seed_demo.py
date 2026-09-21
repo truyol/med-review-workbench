@@ -35,9 +35,9 @@ def seed_demo(sample_root: Path) -> tuple[str, str]:
             synthetic_dicom,
         ),
         (
-            sample_root / "stl" / "aorta.stl",
+            sample_root / "stl" / "vh-f-heart.stl",
             "model/stl",
-            ["主动脉", "3D 模型"],
+            ["心脏参考模型", "3D 模型"],
             synthetic_stl,
         ),
     ]

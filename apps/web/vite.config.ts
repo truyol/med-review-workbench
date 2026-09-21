@@ -5,7 +5,9 @@ export default defineConfig({
   plugins: [react()],
   build: {
     // Split large vendors so app code stays small and cacheable. three.js stays
-    // isolated in the lazy StlViewer chunk.
+    // isolated in the lazy StlViewer chunk. Build assets go to /static so the
+    // SPA route /assets/:assetId is not shadowed by static files in nginx.
+    assetsDir: "static",
     chunkSizeWarningLimit: 1100,
     rolldownOptions: {
       output: {

@@ -1,6 +1,6 @@
 # Sample Data Register
 
-最后更新：2026-09-20
+最后更新：2026-09-21
 
 示例数据必须记录：数据集/页面名称、来源链接、格式、许可或使用条件、获取日期、使用范围、文件哈希和去标识化说明。
 
@@ -8,12 +8,13 @@
 
 ## 全新克隆的默认演示素材
 
-Git 中仅包含下方登记的两张合成 PNG。`seed_demo` 在没有本地 `CT_small_anonymized.dcm` 和 `aorta.stl` 时，会由 `apps/api/app/ops/synthetic_samples.py` **确定性地生成**：
+Git 中包含下方登记的两张合成 PNG 和一份经来源、许可核对的 CC BY 4.0 心脏参考 STL。`seed_demo` 默认读取仓库内的 `vh-f-heart.stl`；没有本地 `CT_small_anonymized.dcm` 时，由 `apps/api/app/ops/synthetic_samples.py` **确定性地生成**：
 
 - 64×64 单帧、无患者来源的 DICOM 圆形 phantom；没有 PatientName/PatientID，`BodyPartExamined=PHANTOM`。
-- 用三角面构成的小型弯曲管道 STL，用于旋转/缩放/平移/复位和结构标记演示。
 
-生成内容写入应用的持久化素材目录，不写回只读 `sample-data/`，也不冒充真实解剖或临床影像。它们保证面试官克隆后执行 README 的两条 Docker 命令即可看到三类素材。若本地准备了下列清理 DICOM 或题目 STL，seed 优先使用对应文件；运行时素材来源不能混称为题目 STL。
+只有当仓库内的心脏 STL 也缺失时，seed 才回退到小型合成曲管 STL。这个回退只用于缺失文件的开发环境，不能称为默认演示模型。
+
+生成内容写入应用的持久化素材目录，不写回只读 `sample-data/`。全新克隆执行 README 的两条 Docker 命令即可看到三类素材。心脏参考 STL 与合成 DICOM phantom 不是同一病例、不能混称为患者解剖重建；本地准备了清理 DICOM 时，seed 会优先读取它。题目 STL 仍只供手动上传演示，不随仓库分发。
 
 ## DICOM
 
@@ -30,11 +31,17 @@ Git 中仅包含下方登记的两张合成 PNG。`seed_demo` 在没有本地 `C
 
 ## STL
 
-STL 由面试题随 `DEMO SET/stl/` 提供，2026-09-20 复制到本地，仅用于本次面试 Demo 和工程验证，不主张额外授权；文件不进入 Git。
+公开仓库内的默认 STL 是独立获取的参考模型，不是面试题 `DEMO SET/stl/` 中的文件。完整署名、来源、许可与用途边界见 [STL 署名文件](stl/ATTRIBUTION.md)。
+
+| 仓库文件 | 大小 | SHA256 | 许可与用途 |
+|---|---:|---|---|
+| `sample-data/stl/vh-f-heart.stl` | 4,295,784 bytes | `00F3C3672A00ED2CB118E7FC3227FCE867B48839EB11F4534FA5B7B58FA80763` | [Commons 文件页面](https://commons.wikimedia.org/wiki/File:Vh-f-heart.stl)标注 CC BY 4.0；默认 3D 查看与结构标记演示，未修改、非临床 |
+
+以下为面试题随 `DEMO SET/stl/` 提供、2026-09-20 复制到本地的**可选**文件，仅用于本次面试 Demo 和工程验证，不主张额外授权；这些文件不进入 Git。
 
 | 文件 | 大小 | SHA256 | 用途 |
 |---|---:|---|---|
-| `sample-data/stl/aorta.stl` | 3,943,284 bytes | `32F00A98A69178A023ACD845EB9C48F5F7E68FBFF2AC55C4CCECB3CE924513E2` | 主 3D 演示模型 |
+| `sample-data/stl/aorta.stl` | 3,943,284 bytes | `32F00A98A69178A023ACD845EB9C48F5F7E68FBFF2AC55C4CCECB3CE924513E2` | 可选题目 3D 模型，需手动上传 |
 | `sample-data/stl/CB.stl` | 4,211,884 bytes | `05CF0329A036CD3BD9E77138203CC8A5A4A8A747789DE6E5E71B45201202B7C2` | 心脏结构模型 |
 | `sample-data/stl/LA.stl` | 14,159,984 bytes | `31CEB1904F52E033FC2E285A77E34BFBF1ED64212E0273CF4BE80C6BB37DF847` | 左房模型和加载压力样例 |
 | `sample-data/stl/LVOT.stl` | 8,037,084 bytes | `AA737CAEB209133EC191A65564C0306B81C23024883A99D36E25678585EA3EE0` | LVOT 结构模型 |

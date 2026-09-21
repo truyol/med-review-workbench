@@ -15,7 +15,7 @@ docker compose -f deploy/docker-compose.yml exec -T api python -m app.ops.seed_d
 
 打开 `http://localhost:8080`，进入 `Demo - SHD preoperative asset review` → `DEMO-TAVR-001`。首次拉取基础镜像需要网络；已安装的 Docker 镜像可被复用。停止服务用 `docker compose -f deploy/docker-compose.yml down`，不要加 `-v`，否则会删除演示数据库和上传素材。
 
-公开仓库直接包含两张非临床合成 PNG；seed 在缺少不随 Git 分发的 DICOM/STL 时，**自动生成无患者来源的 64×64 DICOM phantom 和小型曲管 STL**，因此全新克隆也能立即演示图片、DICOM 和 3D。若自行准备文档所列的清理 DICOM 与题目 STL，seed 会优先读取那些文件。两种来源都只用于工程演示，不作医疗判断。
+公开仓库包含两张非临床合成 PNG 和一份 [CC BY 4.0 心脏参考 STL](sample-data/stl/ATTRIBUTION.md)。seed 默认读取这份 STL；缺少本地清理 DICOM 时，会自动生成无患者来源的 64×64 DICOM phantom。因此全新克隆无需额外下载，就能演示图片、DICOM 和 3D。心脏 STL 不是这个 DICOM 的患者重建；题目附带的 STL 仍需另行取得、手动上传，且不进入 Git。所有演示素材都不用于医疗判断。
 
 ## 当前状态
 
@@ -60,10 +60,12 @@ node scripts\capture-screenshots.mjs
 
 - 项目 → 病例 → 素材三级结构；素材在病例上下文中可追溯。
 - 素材上传与**服务端判型**（DICOM / STL / PNG / JPEG），记录 UUID、大小、SHA256、来源。
-- **图片**：缩略图浏览、类型/状态/标签筛选、两张图片并排比较、标签与备注整理。
+- **图片**：缩略图浏览、类型/状态/标签筛选、标签与备注整理。
+- **素材并排比较**：图片/DICOM 并排缩略图，STL 并排 3D 视图。
 - **DICOM**：白名单元数据、缩略图、多帧识别、无像素/解码失败降级。
 - **3D（STL）**：旋转、缩放、平移、视角复位，以及点击模型放置**结构标记**。
 - **评审**：结论（通过/需补充/拒绝）+ 说明 + 评审人，素材状态由最新评审派生。
+- **删除素材**：未评审素材可删除；已评审素材后端拒绝删除（`DELETE_RESTRICTED`），保护评审历史。
 - 统一错误信封（稳定错误码 + `next_action` + `request_id`）与结构化 JSON 日志。
 
 ## 产品思维门禁
@@ -129,7 +131,7 @@ powershell -ExecutionPolicy Bypass -File .\scripts\check.ps1
 powershell -ExecutionPolicy Bypass -File .\scripts\check-full.ps1
 ```
 
-准备本地演示数据（仅使用仓库内合成 PNG、清理 DICOM 和 STL）：
+准备本地演示数据（仓库内合成 PNG、心脏参考 STL；DICOM 使用本地清理副本或合成 phantom）：
 
 ```powershell
 cd apps/api
@@ -162,7 +164,7 @@ npm.cmd run e2e
 
 ## 样例数据获取与准备
 
-仓库只提交两张明确为非临床的合成 PNG。全新克隆的 seed 会在运行时生成小型 DICOM phantom 与 STL 曲管，**不要求面试官额外下载素材**。以下步骤仅用于验证特定公开 DICOM 或题目提供的 STL；这些原始文件因隐私、许可或体积原因不进入 Git。来源、哈希、使用条件和清理状态见 [样例数据登记](sample-data/README.md)。
+仓库提交两张明确为非临床的合成 PNG 和一份有 [来源与 CC BY 4.0 署名](sample-data/stl/ATTRIBUTION.md)的心脏参考 STL。全新克隆的 seed 会在运行时生成小型 DICOM phantom，**不要求面试官额外下载素材**。以下步骤仅用于验证特定公开 DICOM 或题目提供的可选 STL；这些外部原始文件因隐私、许可或体积原因不进入 Git。来源、哈希、使用条件和清理状态见 [样例数据登记](sample-data/README.md)。
 
 1. 先完成依赖安装：
 
@@ -186,11 +188,13 @@ npm.cmd run e2e
 
    Rubo 样例只用于本地评价，不得随本仓库再分发。未准备该可选样例时，基础 DICOM 路径仍可使用 `CT_small.dcm` 验证。
 
-4. 将面试题 `DEMO SET/stl/` 下的 STL 复制到：
+4. 如需另行展示面试题 `DEMO SET/stl/` 下的 STL，可将其复制到：
 
    ```text
    sample-data/stl/
    ```
+
+   这些可选模型不会替换默认 seed 的心脏模型；请在页面中手动上传。录屏优先选用仓库内的心脏参考模型，并在讲解中说明它与 DICOM 并非同一病例。
 
 5. 原始 DICOM 含已填充的演示身份标签，不能直接用于应用或演示。准备完成后生成本地清理副本：
 

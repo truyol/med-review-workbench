@@ -83,12 +83,13 @@
 
 ## 10. 样例数据
 
-公开仓库默认仅提交两张合成 PNG；全新克隆的 seed 在运行时生成非临床 DICOM phantom 与 STL 曲管。下表中的外部 DICOM/STL 是**开发者本地可选样例**，不是面试官克隆后必然拥有的文件。
+公开仓库默认提交两张合成 PNG 和有 CC BY 4.0 署名的心脏参考 STL；全新克隆的 seed 在运行时生成非临床 DICOM phantom。下表中的其他外部 DICOM/STL 是**开发者本地可选样例**，不是面试官克隆后必然拥有的文件。
 
 | 素材 | 路径 | 用途 | 当前状态 |
 |---|---|---|---|
 | 运行时 DICOM phantom | seed 确定性生成 | 默认 DICOM 解析、白名单元数据和缩略图链路 | 全新克隆可用；非临床 |
-| 运行时 STL 曲管 | seed 确定性生成 | 默认 3D 查看与结构标记 | 全新克隆可用；非真实解剖 |
+| 心脏参考 STL | `sample-data/stl/vh-f-heart.stl` | 默认 3D 查看与结构标记 | 全新克隆可用；来源与 CC BY 4.0 署名见 `sample-data/stl/ATTRIBUTION.md`；并非演示 DICOM 的病例重建 |
+| 运行时 STL 曲管 | seed 确定性生成 | 仅在心脏参考 STL 缺失时回退 | 非真实解剖 |
 | pydicom 清理副本 | `sample-data/dicom/CT_small_anonymized.dcm` | 进阶 DICOM 验证 | 本地可选，不入 Git |
 | Rubo 清理副本 | `sample-data/dicom/rubo_angiogram_0002/0002_anonymized.DCM` | 96 帧单文件演示 | 本地可选，不入 Git |
 | 题目 STL | `sample-data/stl/{aorta,CB,LA,LVOT}.stl` | 题目模型和加载压力演示 | 本地可选，不入 Git |

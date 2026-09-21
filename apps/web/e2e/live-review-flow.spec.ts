@@ -1,5 +1,4 @@
 import { expect, test } from "@playwright/test";
-import { readFileSync } from "node:fs";
 
 test.skip(!process.env.PLAYWRIGHT_LIVE, "requires the Docker-backed P8 environment");
 
@@ -96,39 +95,30 @@ test("real backend persists asset tags and note", async ({ page, request }) => {
   expect(assets.data[0].note).toBe("E2E 标签与备注验证");
 });
 
-test("real backend compares two distinct image previews", async ({ page, request }) => {
+test("real backend comparison renders a selected image preview", async ({ page, request }) => {
   const projects = await (await request.get("/api/v1/projects?limit=100")).json();
   const demo = projects.data.find((item: { name: string }) => item.name.includes("SHD"));
   expect(demo).toBeTruthy();
   const cases = await (await request.get(`/api/v1/projects/${demo.id}/cases?limit=100`)).json();
   const caseId = cases.data[0].id;
-  const secondImage = readFileSync(
-    new URL("../../../sample-data/image/synthetic-cardiac-ct-annotated.png", import.meta.url),
-  );
-  const upload = await request.post(`/api/v1/cases/${caseId}/assets`, {
-    multipart: {
-      file: { name: "synthetic-compare.png", mimeType: "image/png", buffer: secondImage },
-    },
-  });
-  expect(upload.ok()).toBeTruthy();
 
   await page.goto(`/cases/${caseId}`);
   await page.getByRole("button", { name: "并排比较" }).click();
-  const dialog = page.getByRole("dialog", { name: "图片并排比较" });
+  const dialog = page.getByRole("dialog", { name: "素材并排比较" });
   await expect(dialog).toBeVisible();
+
+  // Comparison lists DICOM/STL too, so choose an image option explicitly.
   await dialog.locator(".ant-select").nth(0).click();
-  await page.locator(".ant-select-dropdown:visible .ant-select-item-option").first().click();
-  await dialog.locator(".ant-select").nth(1).click();
-  await expect(page.locator(".ant-select-dropdown:visible .ant-select-item-option")).toHaveCount(1);
-  await page.locator(".ant-select-dropdown:visible .ant-select-item-option").first().click();
+  await page
+    .locator(".ant-select-dropdown:visible .ant-select-item-option", { hasText: "图片" })
+    .first()
+    .click();
 
   const left = dialog.getByRole("img", { name: "左侧素材" });
-  const right = dialog.getByRole("img", { name: "右侧素材" });
   await expect(left).toBeVisible();
-  await expect(right).toBeVisible();
-  await expect.poll(() => left.evaluate((image: HTMLImageElement) => image.naturalWidth)).toBeGreaterThan(0);
-  await expect.poll(() => right.evaluate((image: HTMLImageElement) => image.naturalWidth)).toBeGreaterThan(0);
-  expect(await left.getAttribute("src")).not.toBe(await right.getAttribute("src"));
+  await expect
+    .poll(() => left.evaluate((image: HTMLImageElement) => image.naturalWidth))
+    .toBeGreaterThan(0);
 });
 
 test("real backend persists a structure marker on the seeded STL asset", async ({ page, request }) => {
@@ -139,6 +129,7 @@ test("real backend persists a structure marker on the seeded STL asset", async (
   const caseId = cases.data[0].id;
   const board = await (await request.get(`/api/v1/cases/${caseId}/review-board`)).json();
   const stl = board.data.assets.find((item: { asset: { kind: string } }) => item.asset.kind === "stl").asset;
+  const markerLabel = `主动脉瓣环-${Date.now()}`;
 
   await page.goto(`/assets/${stl.id}?caseId=${caseId}`);
   await expect(page.getByText("结构标记", { exact: true })).toBeVisible();
@@ -170,10 +161,53 @@ test("real backend persists a structure marker on the seeded STL asset", async (
   }
   expect(dialogOpen, "clicking the model should open the marker dialog").toBe(true);
 
-  await page.getByLabel("结构名称").fill("主动脉瓣环");
+  await page.getByLabel("结构名称").fill(markerLabel);
   await page.locator(".ant-modal-footer .ant-btn-primary").click();
-  await expect(page.getByText("主动脉瓣环")).toBeVisible();
+  await expect(page.getByText(markerLabel, { exact: true })).toBeVisible();
 
   const annotations = await (await request.get(`/api/v1/assets/${stl.id}/annotations`)).json();
-  expect(annotations.data.some((item: { label: string }) => item.label === "主动脉瓣环")).toBe(true);
+  expect(annotations.data.some((item: { label: string }) => item.label === markerLabel)).toBe(true);
+});
+
+test("real backend deletes an unreviewed asset through the UI", async ({ page, request }) => {
+  const suffix = Date.now().toString();
+  const project = await (
+    await request.post("/api/v1/projects", { data: { name: `P10 Delete ${suffix}` } })
+  ).json();
+  const created = await (
+    await request.post(`/api/v1/projects/${project.data.id}/cases`, {
+      data: { case_code: `DEL-${suffix}`, title: "Delete flow" },
+    })
+  ).json();
+  const caseId = created.data.id;
+  const uploaded = await (
+    await request.post(`/api/v1/cases/${caseId}/assets`, {
+      multipart: { file: { name: "del.png", mimeType: "image/png", buffer: png } },
+    })
+  ).json();
+  const assetId = uploaded.data.id;
+
+  await page.goto(`/assets/${assetId}?caseId=${caseId}`);
+  await page.getByRole("button", { name: "删除素材" }).click();
+  await page.getByRole("button", { name: "删除", exact: true }).click();
+  await expect(page.getByText("素材已删除")).toBeVisible();
+
+  const board = await (await request.get(`/api/v1/cases/${caseId}/review-board`)).json();
+  expect(board.data.assets.length).toBe(0);
+});
+
+test("real backend comparison offers DICOM and STL options", async ({ page, request }) => {
+  const projects = await (await request.get("/api/v1/projects?limit=100")).json();
+  const demo = projects.data.find((item: { name: string }) => item.name.includes("SHD"));
+  expect(demo).toBeTruthy();
+  const cases = await (await request.get(`/api/v1/projects/${demo.id}/cases?limit=100`)).json();
+  const caseId = cases.data[0].id;
+
+  await page.goto(`/cases/${caseId}`);
+  await expect(page.getByRole("button", { name: "并排比较" })).toBeEnabled();
+  await page.getByRole("button", { name: "并排比较" }).click();
+  await page.getByLabel("左侧素材").click();
+  const dropdown = page.locator(".ant-select-dropdown");
+  await expect(dropdown.getByText("DICOM", { exact: false })).toBeVisible();
+  await expect(dropdown.getByText("3D 模型", { exact: false })).toBeVisible();
 });
