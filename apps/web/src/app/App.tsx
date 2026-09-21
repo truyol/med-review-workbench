@@ -64,6 +64,7 @@ import {
   type Asset,
   type Review,
 } from "../shared/api/client";
+import { markerColor } from "../shared/markerColors";
 import type { MarkerPoint } from "../features/viewer/StlViewer";
 
 const StlViewer = lazy(() => import("../features/viewer/StlViewer"));
@@ -773,9 +774,13 @@ function AssetDetail({ asset, caseId }: { asset: Asset; caseId: string }) {
             <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="还没有标记点" />
           ) : (
             <div className="marker-list">
-              {markers.map((marker: Annotation) => (
+              {markers.map((marker: Annotation, index: number) => (
                 <div key={marker.id} className="marker-item">
-                  <span className="marker-dot" />
+                  <span
+                    className="marker-dot"
+                    style={{ background: markerColor(index), boxShadow: `0 0 0 3px ${markerColor(index)}33` }}
+                  />
+                  <span className="marker-index">{index + 1}</span>
                   <span className="marker-label">{marker.label}</span>
                   <Button
                     size="small"

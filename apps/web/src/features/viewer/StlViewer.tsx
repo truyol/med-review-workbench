@@ -6,6 +6,7 @@ import * as THREE from "three";
 import { Button, Typography } from "antd";
 import type { Annotation } from "../../shared/api/client";
 import { assetModelUrl } from "../../shared/api/client";
+import { markerColor } from "../../shared/markerColors";
 
 type FitRef = { current: () => void };
 
@@ -77,7 +78,7 @@ function StlModel({
     geometry.center();
     geometry.computeVertexNormals();
     geometry.computeBoundingSphere();
-    return Math.max((geometry.boundingSphere?.radius ?? 100) * 0.025, 0.01);
+    return Math.max((geometry.boundingSphere?.radius ?? 100) * 0.012, 0.005);
   }, [geometry]);
 
   const handlePointerDown = (event: ThreeEvent<PointerEvent>) => {
@@ -112,15 +113,18 @@ function StlModel({
       >
         <meshStandardMaterial color="#4f9cf9" roughness={0.42} metalness={0.15} />
       </mesh>
-      {markers.map((marker) => (
-        <mesh
-          key={marker.id}
-          position={[marker.data.x ?? 0, marker.data.y ?? 0, marker.data.z ?? 0]}
-        >
-          <sphereGeometry args={[markerRadius, 16, 16]} />
-          <meshStandardMaterial color="#faad14" emissive="#d48806" emissiveIntensity={0.5} />
-        </mesh>
-      ))}
+      {markers.map((marker, index) => {
+        const color = markerColor(index);
+        return (
+          <mesh
+            key={marker.id}
+            position={[marker.data.x ?? 0, marker.data.y ?? 0, marker.data.z ?? 0]}
+          >
+            <sphereGeometry args={[markerRadius, 20, 20]} />
+            <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.35} />
+          </mesh>
+        );
+      })}
     </>
   );
 }
