@@ -37,7 +37,7 @@ powershell -ExecutionPolicy Bypass -File .\scripts\reset-demo.ps1
 
 - 项目：`Demo - SHD preoperative asset review`
 - 病例：`DEMO-TAVR-001`
-- 素材：合成 PNG（已通过评审）、清理后 DICOM、`aorta.stl`
+- 素材：合成 PNG（已通过评审）、DICOM、STL。全新克隆缺少外部素材时，seed 确定性生成非临床 DICOM phantom 与曲管 STL；本地提供清理 DICOM 和题目 `aorta.stl` 时优先读取它们。
 
 容器内 seed 通过只读挂载 `../sample-data:/sample-data:ro` 读取样例，命令：
 

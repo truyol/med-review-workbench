@@ -14,14 +14,14 @@
 | P6 异常/边界 | 收口完成 | 损坏、缺失、伪造、超限、保存失败等路径有明确处理 | `docs/product/10-p6-boundary-acceptance.md` |
 | P7 运维化 | 收口完成 | Docker Compose、Nginx、配置、健康检查和运维说明完成 | `docs/product/11-p7-operations-acceptance.md`；`docs/engineering/ops.md` |
 | P8 测试 | 收口完成 | 单元、集成、E2E、隐私扫描与测试报告通过 | `docs/product/12-p8-test-report.md`；`scripts/check-full.ps1` 输出 `Full P8 gate passed.` |
-| P9 文档 | 未开始 | README、PRD、设计、部署、AI 使用和演示材料一致 | 收口文档一致性、移除过期内容、补齐交付说明 |
+| P9 文档 | 进行中 | README、PRD、设计、部署、AI 使用和演示材料一致 | 按原始题目复核交付文档；修正全新克隆样例说明与过期数字 |
 | P10 交付验收 | 未开始 | 新环境可复现，五分钟演示和交付清单全部通过 | 新环境复现 + 五分钟演示 + 交付清单 |
 
 ## 当前决策
 
 - 使用小型单仓库；开发期使用 SQLite，本地文件系统保存素材；生产演进目标为 PostgreSQL。
 - 演示与测试使用**隔离的 Compose 环境**：演示栈 `med-review-workbench`（端口 8080），门禁栈 `medreview-p8-gate`（端口 18080，用完连卷销毁）。规范见 `docs/engineering/demo-and-test-data.md`。
-- 演示库重置入口：`scripts/reset-demo.ps1`。
+- 演示库重置入口：`scripts/reset-demo.ps1`；全新克隆由 seed 生成非临床 DICOM/STL fallback，不依赖私有 `DEMO SET`。
 - 宿主机数据库与容器卷不可混用（预览/模型记录创建时的绝对路径）。
 - 面试题要求的图片浏览/筛选/比较/整理已作为 Must 实现，样例为两张可提交的非临床合成 PNG。
 - DICOM 演示使用 `prepare-dicom-samples.py` 生成的本地清理副本，原始样例不直接进入应用或演示。

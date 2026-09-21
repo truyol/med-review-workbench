@@ -1,7 +1,7 @@
 # 五分钟演示脚本
 
-文档状态：Approved for P1  
-更新时间：2026-09-20
+文档状态：交付演示版
+更新时间：2026-09-21
 
 ## 演示目标
 
@@ -16,25 +16,22 @@
 - 脱敏病例：`DEMO-TAVR-001`
 - 图片基线：`sample-data/image/synthetic-cardiac-ct-baseline.png`
 - 图片标注对照：`sample-data/image/synthetic-cardiac-ct-annotated.png`
-- DICOM 快速验证：`sample-data/dicom/CT_small_anonymized.dcm`
-- 心血管多帧 DICOM：`sample-data/dicom/rubo_angiogram_0002/0002_anonymized.DCM`
-- 3D 模型：`sample-data/stl/aorta.stl`
-- 3D 模型：`sample-data/stl/LA.stl`
+- DICOM 默认演示：seed 生成的非临床 64×64 phantom；可选替换为本地清理的 `CT_small_anonymized.dcm`
+- 3D 默认演示：seed 生成的曲管 STL；可选替换为题目提供的 `aorta.stl`
+- 96 帧 Rubo DICOM 和 `LA.stl`：只在面试官另行取得并按 README 准备后作为进阶展示，不属于全新克隆的默认素材
 
 ## 演示步骤
 
 1. 打开系统，进入 Demo 项目。
 2. 创建或打开脱敏病例 `DEMO-TAVR-001`。
-3. 关联两张合成 PNG、两份 DICOM 清理副本和两个 STL 到该病例。
+3. 确认 seed 已关联合成 PNG、非临床 DICOM phantom 和 STL 曲管；上传第二张合成 PNG 用于图片比较。
 4. 浏览图片缩略图，按图片类型/待评审状态筛选，选择基线图和标注图并排比较。
 5. 给图片添加标签、状态和备注，证明“整理”结果可保存。
-6. 查看 `CT_small_anonymized.dcm` 的安全元数据和缩略图。
-7. 查看 Rubo `0002_anonymized.DCM`，说明它是多帧单文件。
-8. 打开 `aorta.stl`，进行旋转、缩放、平移和复位。
-9. P5 当前不执行结构标记 CRUD；说明标注坐标协议尚未进入本阶段，保留 STL 视角复位和素材评审记录。
-10. 将素材评审为“通过”或“需补充”，前端状态映射为 `accepted` / `needs_changes`。
-11. 填写评审结论：状态、文本、评审人、时间、下一步。
-12. 刷新页面，确认图片整理结果和评审结论仍然存在。
+6. 查看 DICOM phantom 的白名单元数据和缩略图，强调它没有真实患者来源；可选展示另行准备的清理 DICOM。
+7. 打开 STL 曲管，进行旋转、缩放、平移和复位；如准备了题目 `aorta.stl`，可换用原模型。
+8. 点击模型放置结构标记、填写结构名称，刷新后检查标记持久化。
+9. 将素材评审为“通过”或“需补充”，前端状态映射为 `accepted` / `needs_changes`。
+10. 填写评审结论：状态、文本、评审人；刷新页面，确认图片整理结果和评审结论仍然存在。
 
 ## 讲解重点
 

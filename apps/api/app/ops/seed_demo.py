@@ -11,6 +11,7 @@ from app.models.asset import Asset, AssetStatus
 from app.models.case import Case
 from app.models.project import Project
 from app.models.review import Review, ReviewDecision
+from app.ops.synthetic_samples import synthetic_dicom, synthetic_stl
 from app.services.asset_processing import prepare_asset_upload
 from app.settings import get_settings
 
@@ -21,9 +22,24 @@ DEMO_CASE_CODE = "DEMO-TAVR-001"
 def seed_demo(sample_root: Path) -> tuple[str, str]:
     settings = get_settings()
     sample_files = [
-        (sample_root / "image" / "synthetic-cardiac-ct-baseline.png", "image/png", ["基线图"]),
-        (sample_root / "dicom" / "CT_small_anonymized.dcm", "application/dicom", ["CT", "已脱敏"]),
-        (sample_root / "stl" / "aorta.stl", "model/stl", ["主动脉", "3D 模型"]),
+        (
+            sample_root / "image" / "synthetic-cardiac-ct-baseline.png",
+            "image/png",
+            ["基线图"],
+            None,
+        ),
+        (
+            sample_root / "dicom" / "CT_small_anonymized.dcm",
+            "application/dicom",
+            ["CT", "已脱敏"],
+            synthetic_dicom,
+        ),
+        (
+            sample_root / "stl" / "aorta.stl",
+            "model/stl",
+            ["主动脉", "3D 模型"],
+            synthetic_stl,
+        ),
     ]
     with SessionLocal() as db:
         project = db.scalar(select(Project).where(Project.name == DEMO_PROJECT_NAME))
@@ -51,10 +67,15 @@ def seed_demo(sample_root: Path) -> tuple[str, str]:
         existing = {
             asset.sha256 for asset in db.scalars(select(Asset).where(Asset.case_id == case.id))
         }
-        for path, content_type, tags in sample_files:
-            if not path.exists():
+        for path, content_type, tags, fallback in sample_files:
+            if not path.exists() and fallback is None:
                 continue
-            content = path.read_bytes()
+            if path.exists():
+                content = path.read_bytes()
+            elif fallback is not None:
+                content = fallback()
+            else:
+                continue
             digest = hashlib.sha256(content).hexdigest()
             if digest in existing:
                 continue

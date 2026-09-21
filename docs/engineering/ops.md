@@ -29,6 +29,8 @@ docker compose -f .\deploy\docker-compose.yml exec -T api `
   python -m app.ops.seed_demo --sample-root /sample-data
 ```
 
+全新克隆无需额外素材下载：缺少本地清理 DICOM/STL 时，seed 会生成非临床 DICOM phantom 与曲管 STL，并使用仓库中的合成 PNG。若需要展示题目给出的真实 STL 或特定开源 DICOM，先按 README 的样例准备步骤放入 `sample-data/`，再对干净演示库 seed；已入库的其他素材不会被 seed 删除。
+
 宿主机开发模式仍使用 `scripts/seed-demo.py` 和 `apps/api/var/medreview.db`。两者用途和数据库路径不同，不能用宿主机 seed 代替容器 seed。
 
 ## 3. 健康检查

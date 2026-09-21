@@ -6,6 +6,15 @@
 
 这些素材仅用于本 demo 的解析、预览、3D 查看和评审流程演示，不用于临床。
 
+## 全新克隆的默认演示素材
+
+Git 中仅包含下方登记的两张合成 PNG。`seed_demo` 在没有本地 `CT_small_anonymized.dcm` 和 `aorta.stl` 时，会由 `apps/api/app/ops/synthetic_samples.py` **确定性地生成**：
+
+- 64×64 单帧、无患者来源的 DICOM 圆形 phantom；没有 PatientName/PatientID，`BodyPartExamined=PHANTOM`。
+- 用三角面构成的小型弯曲管道 STL，用于旋转/缩放/平移/复位和结构标记演示。
+
+生成内容写入应用的持久化素材目录，不写回只读 `sample-data/`，也不冒充真实解剖或临床影像。它们保证面试官克隆后执行 README 的两条 Docker 命令即可看到三类素材。若本地准备了下列清理 DICOM 或题目 STL，seed 优先使用对应文件；运行时素材来源不能混称为题目 STL。
+
 ## DICOM
 
 原始样例和生成的清理副本均默认不进入 Git。应用与演示只使用 `*_anonymized` 清理副本；原始文件仅作为可复现输入。

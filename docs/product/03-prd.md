@@ -83,14 +83,15 @@
 
 ## 10. 样例数据
 
+公开仓库默认仅提交两张合成 PNG；全新克隆的 seed 在运行时生成非临床 DICOM phantom 与 STL 曲管。下表中的外部 DICOM/STL 是**开发者本地可选样例**，不是面试官克隆后必然拥有的文件。
+
 | 素材 | 路径 | 用途 | 当前状态 |
 |---|---|---|---|
-| pydicom 清理副本 | `sample-data/dicom/CT_small_anonymized.dcm` | 快速验证 DICOM 解析、缩略图和元数据链路 | 已生成；仅本地 demo |
-| Rubo 清理副本 | `sample-data/dicom/rubo_angiogram_0002/0002_anonymized.DCM` | 心血管造影多帧单文件演示 | 已生成；仅本地评价使用 |
-| `aorta.stl` | `sample-data/stl/aorta.stl` | 主 3D 演示模型 | 已可用 |
-| `CB.stl` | `sample-data/stl/CB.stl` | 心脏结构模型 | 已可用 |
-| `LA.stl` | `sample-data/stl/LA.stl` | 左房/加载压力样例 | 已可用 |
-| `LVOT.stl` | `sample-data/stl/LVOT.stl` | LVOT 结构模型 | 已可用 |
+| 运行时 DICOM phantom | seed 确定性生成 | 默认 DICOM 解析、白名单元数据和缩略图链路 | 全新克隆可用；非临床 |
+| 运行时 STL 曲管 | seed 确定性生成 | 默认 3D 查看与结构标记 | 全新克隆可用；非真实解剖 |
+| pydicom 清理副本 | `sample-data/dicom/CT_small_anonymized.dcm` | 进阶 DICOM 验证 | 本地可选，不入 Git |
+| Rubo 清理副本 | `sample-data/dicom/rubo_angiogram_0002/0002_anonymized.DCM` | 96 帧单文件演示 | 本地可选，不入 Git |
+| 题目 STL | `sample-data/stl/{aorta,CB,LA,LVOT}.stl` | 题目模型和加载压力演示 | 本地可选，不入 Git |
 | 合成 PNG/标注图 | `sample-data/image/synthetic-cardiac-ct-*.png` | 图片浏览、筛选、并排比较、整理和结论沉淀 | 已生成；可提交的非临床合成素材 |
 
 ## 11. 明确不做

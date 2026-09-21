@@ -6,7 +6,7 @@
 
 P8 门禁通过。快速检查和完整检查均实际执行成功；核心“项目 → 病例 → 素材 → 评审 → 看板”闭环同时具备 API 集成测试、前端组件测试、Mock E2E 和 Docker 真实后端 E2E 证据。
 
-本结论只覆盖当前已实现范围。结构标记、标签 CRUD/筛选、图片并排比较、真实鉴权、持久化审计表、reprocess 和 PostgreSQL 生产验证没有被测试结果包装成“已通过”，详见第 6 节。
+本结论只覆盖当前已实现范围。结构标记、标签/筛选和图片并排比较已在后续整改中补齐；真实鉴权、持久化审计表、reprocess 和 PostgreSQL 生产验证仍未被包装成“已通过”，详见第 6、9 节。
 
 ## 2. 环境与命令
 
@@ -18,7 +18,7 @@ P8 门禁通过。快速检查和完整检查均实际执行成功；核心“�
 | Node.js / npm | 24.14.0 / 11.18.0 |
 | Docker | 29.8.0 |
 | 浏览器 | 本机 Chrome 通道，由 Playwright 驱动 |
-| 应用运行 | Docker Compose；Nginx `http://127.0.0.1:8080`；API/Web healthy |
+| 应用运行 | Docker Compose 隔离门禁栈 `http://127.0.0.1:18080`；API/Web healthy；演示栈独立使用 8080 |
 | 默认数据库 | SQLite 持久卷；PostgreSQL 仅保留切换路径 |
 
 快速开发门禁：
@@ -41,15 +41,15 @@ powershell -ExecutionPolicy Bypass -File .\scripts\check-full.ps1
 |---|---|---|
 | Python 静态检查 | 通过 | Ruff、Mypy 通过 |
 | API 单元/集成 | 29 passed | 覆盖业务闭环、文件解析、异常边界、标签/备注、结构标记、日志、seed、备份恢复和隐私扫描 |
-| API 覆盖率 | 89% | 904 statements，103 missed；关键路由 96%、领域错误 97%、主应用 98%、repository 95% |
+| API 覆盖率 | 92% | 1063 statements，87 missed；关键路由 97%、领域错误 97%、主应用 98%、repository 96% |
 | 数据库迁移 | 通过 | 隔离临时库执行 upgrade、downgrade，不污染运行数据库 |
 | Web 静态/构建 | 通过 | ESLint、TypeScript/Vite 生产构建通过 |
 | Web 组件 | 3 passed | 页面工作区、四种状态映射、可恢复错误提示 |
-| Web 覆盖率 | 语句 36.17%；分支 42.85%；函数 21.31%；行 78.04% | 如实记录，不设置虚假覆盖率门槛 |
+| Web 覆盖率 | 语句 38.94%；分支 39.13%；函数 24.73%；行 38.63% | 如实记录，复杂交互主要由真实后端 E2E 覆盖；不设置虚假覆盖率门槛 |
 | Playwright | 6 passed | 2 条 Mock 流程 + 4 条 Docker 真实后端流程（主链、异常、标签、结构标记） |
 | 异常 E2E | 通过 | API abort 可恢复提示；真实后端不支持格式返回稳定提示与下一步 |
-| 隐私日志扫描 | 通过 | 修复后复验扫描 Docker API 日志 62 行，敏感模式命中 0 |
-| Python 依赖审计 | 通过 | `pip-audit` 无已知漏洞；两个本地项目包因不在 PyPI 被明确跳过 |
+| 隐私日志扫描 | 通过 | 最新隔离门禁扫描 Docker API 日志 95 行，敏感模式命中 0 |
+| Python 依赖审计 | 通过 | `pip-audit` 无已知漏洞；本地项目包 `medreview-api` 因不在 PyPI 被明确跳过 |
 | Node 生产依赖审计 | 通过 | `npm audit --omit=dev --audit-level=high`：0 vulnerabilities |
 
 真实后端 E2E 不是 `page.route` Mock：浏览器通过 Nginx 调用容器 API，实际创建项目/病例、上传合成 PNG、提交评审并校验看板；异常流实际上传不支持文件并检查用户下一步。
@@ -68,7 +68,7 @@ powershell -ExecutionPolicy Bypass -File .\scripts\check-full.ps1
 | FR-008 类型/状态/标签筛选 | 通过 | API 与前端均支持类型、状态、标签筛选 |
 | FR-009 图片浏览/并排比较/整理 | 通过 | 单图预览、双图并排比较、标签/状态整理与结论沉淀 |
 | FR-010 异常可解释 | 通过 | P6 API 边界测试、前端错误组件、Mock/真实异常 E2E |
-| FR-011 可追踪且不泄露的日志 | 通过 | request_id 测试；运行日志扫描 54 行、0 命中 |
+| FR-011 可追踪且不泄露的日志 | 通过 | request_id 测试；最新运行日志扫描 95 行、0 命中 |
 | NFR-002 SQLite/PostgreSQL 路径 | 部分通过 | SQLite 迁移、持久卷、备份恢复已验证；PostgreSQL 仅文档化，未生产验证 |
 | NFR-006 DICOM 白名单 | 通过 | 白名单单测、敏感描述字段抑制、日志隐私扫描 |
 
@@ -83,7 +83,7 @@ powershell -ExecutionPolicy Bypass -File .\scripts\check-full.ps1
 
 ### 修复后复验记录
 
-针对 Mock E2E 的宽泛文本定位和未拦截预览请求，已将“白名单元数据”改为严格精确匹配，并为 `/api/v1/assets/asset-1/preview` 返回可解码的合成 PNG，同时断言图片 `naturalWidth > 0`。修复后于 2026-09-21 重新执行完整门禁，真实输出为：
+历史复验：针对 Mock E2E 的宽泛文本定位和未拦截预览请求，已将“白名单元数据”改为严格精确匹配，并为 `/api/v1/assets/asset-1/preview` 返回可解码的合成 PNG，同时断言图片 `naturalWidth > 0`。当时于 2026-09-21 重新执行完整门禁，输出如下；**最新 6 条 E2E 与 95 行日志结果以第 3 节和第 10 节为准**：
 
 ```text
 4 passed (9.8s)
@@ -99,7 +99,7 @@ Full P8 gate passed.
 
 1. **真实权限、持久化审计表、reprocess、标注批量编辑延期**：它们不是当前闭环的隐藏“伪完成项”。
 2. **PostgreSQL 未作生产验证**：仅验证了可选驱动/配置边界和 SQLite 运维路径。
-3. **前端覆盖深度有限**：行覆盖率较高，但语句和函数覆盖率较低；真实 E2E 覆盖主链、异常、标签与结构标记。
+3. **前端组件覆盖深度有限**：行覆盖率 38.63%，语句和函数覆盖率也较低；真实 E2E 覆盖主链、异常、标签与结构标记，不等于组件分支全覆盖。
 4. **STL 拖拽旋转/缩放本身未做像素级断言**：标记落库与查看器加载失败兜底已自动化，手势精度仍依赖人工演示确认。
 5. **非阻塞技术债**：FastAPI/Starlette TestClient 有上游弃用警告；`pip-audit` 无法审计不在 PyPI 的本地项目包。
 
@@ -119,7 +119,7 @@ Full P8 gate passed.
 3. **UI 观感与开发残留**：移除顶栏 `P5 前端` 开发标签，重做布局/主题/卡片/资产详情，启用中文 locale，关闭 AntD 按钮自动空格。
 4. **E2E 断言脆弱**：mock 用例因 P6 新增兜底 Alert 文案与卡片标题重复触发 strict mode 冲突；AntD 中文按钮自动空格导致 `查看`/`确定` 文本选择器失效。整改：断言改为 `{ exact: true }` 或 `.ant-modal-footer .ant-btn-primary`，并关闭按钮自动空格。
 
-整改后 `scripts/check-full.ps1` 实测输出 `Full P8 gate passed.`（4 条 Playwright 通过），且运行后演示卷中仍只有 `Demo - SHD preoperative asset review` 一个项目。
+该轮整改后 `scripts/check-full.ps1` 实测输出 `Full P8 gate passed.`（当时 4 条 Playwright 通过），且运行后演示卷中仍只有 `Demo - SHD preoperative asset review` 一个项目；最新结果见第 10 节。
 
 ## 9. 2026-09-21 功能补齐与交付材料
 
@@ -128,4 +128,10 @@ Full P8 gate passed.
 3. **交付截图**：`docs/screenshots/` 由 `apps/web/scripts/capture-screenshots.mjs` 从运行中的演示栈生成，并在 README 中引用。
 4. **审计健壮性**：`check-full.ps1` 对 Python/Node 依赖审计增加 3 次重试，缓解网络抖动。
 
+## 10. 公开仓库交付前复验（2026-09-21）
+
+- 从原始 Word 面试题重新核对 Must：项目/病例/素材、图片浏览筛选比较整理、DICOM 读取、STL 操作、异常、文档、AI 与医疗边界。
+- 修复全新克隆缺少 DICOM/STL 的演示缺口：seed 在外部样例缺席时确定性生成非临床 DICOM phantom 和曲管 STL；单测验证三类素材、DICOM 预览与幂等性。
+- 最新隔离完整门禁实际输出：API `29 passed`、覆盖率 `92% (1063 statements, 87 missed)`；Web 组件 `3 passed`；Playwright `6 passed (9.9s)`；隐私扫描 `scanned_lines=95 findings=0`；Python 依赖无已知漏洞，Node 生产依赖 `0 vulnerabilities`；最后输出 `Full P8 gate passed.` 并销毁隔离栈和卷。
+- 本报告中保留的旧轮次数字只用于说明整改历史，不作为当前交付验收数字。
 

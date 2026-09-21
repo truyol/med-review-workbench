@@ -2,12 +2,25 @@
 
 结构性心脏病术前规划素材评审工作台。
 
+## 面试官快速启动
+
+前置条件：安装并启动 Docker Desktop（或支持 Compose 的 Docker），确保 `docker compose version` 可执行。在仓库根目录运行：
+
+```sh
+docker compose -f deploy/docker-compose.yml up -d --build --wait
+docker compose -f deploy/docker-compose.yml exec -T api python -m app.ops.seed_demo --sample-root /sample-data
+```
+
+打开 `http://localhost:8080`，进入 `Demo - SHD preoperative asset review` → `DEMO-TAVR-001`。首次拉取基础镜像需要网络；已安装的 Docker 镜像可被复用。停止服务用 `docker compose -f deploy/docker-compose.yml down`，不要加 `-v`，否则会删除演示数据库和上传素材。
+
+公开仓库直接包含两张非临床合成 PNG；seed 在缺少不随 Git 分发的 DICOM/STL 时，**自动生成无患者来源的 64×64 DICOM phantom 和小型曲管 STL**，因此全新克隆也能立即演示图片、DICOM 和 3D。若自行准备文档所列的清理 DICOM 与题目 STL，seed 会优先读取那些文件。两种来源都只用于工程演示，不作医疗判断。
+
 ## 当前状态
 
-P8 测试与证据收口已完成：快速门禁和 Docker 真实后端完整门禁均通过，验收记录见 `docs/product/12-p8-test-report.md`。
+P8 测试与证据已通过，当前进行 P9 文档一致性与交付准备；P10 尚未收口。测试报告见 [P8 证据](docs/product/12-p8-test-report.md)。
 
 - 项目根目录：克隆后的仓库根目录
-- 当前阶段：P8 测试已收口，准备进入 P9 文档一致性整理
+- 当前阶段：P9 文档收口中，P10 尚未验收
 - 产品定位：结构性心脏病术前规划素材评审工作台
 - 业务代码：P4 后端闭环与 P5 前端主流程已完成
 - 原则：先从用户问题定义范围，再做技术设计和实现
@@ -144,7 +157,7 @@ npm.cmd run e2e
 
 ## 样例数据获取与准备
 
-仓库只提交两张明确为非临床的合成 PNG。DICOM 原文件和题目提供的 STL 因隐私、许可或体积原因不进入 Git；来源、哈希、使用条件和清理状态见 [样例数据登记](sample-data/README.md)。
+仓库只提交两张明确为非临床的合成 PNG。全新克隆的 seed 会在运行时生成小型 DICOM phantom 与 STL 曲管，**不要求面试官额外下载素材**。以下步骤仅用于验证特定公开 DICOM 或题目提供的 STL；这些原始文件因隐私、许可或体积原因不进入 Git。来源、哈希、使用条件和清理状态见 [样例数据登记](sample-data/README.md)。
 
 1. 先完成依赖安装：
 
@@ -244,7 +257,7 @@ powershell -ExecutionPolicy Bypass -File .\scripts\check-full.ps1
 ## 当前已知限制
 
 - DICOM 清理脚本只处理 demo 的直接身份标签、私有标签和 UID，不等同于临床级去标识化，也不证明像素中没有烧录文字。
-- Rubo DICOM 仅用于本地评价，不随仓库分发；可提交的图片样例是两张明确标注为非临床的合成 PNG。
+- Rubo DICOM 仅用于本地评价，不随仓库分发；全新克隆可使用运行时生成的非临床 DICOM/STL fallback 演示基础功能。
 - 测试存在来自 FastAPI/Starlette TestClient 依赖的弃用警告；不影响当前测试结果，待上游兼容版本稳定后升级。
 - 前端已按 vendor 拆分：应用主包约 54KB，`antd` / `react` 独立成可缓存 vendor chunk，`three.js` 仅在进入 STL 详情时加载。
 - 真实鉴权、持久化审计表、reprocess、标注批量编辑和 PostgreSQL 生产验证仍在延期范围，详见 `docs/product/12-p8-test-report.md` 与 `PROGRESS.md`。

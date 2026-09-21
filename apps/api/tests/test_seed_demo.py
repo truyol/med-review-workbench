@@ -6,7 +6,7 @@ from sqlalchemy import create_engine, func, select
 from sqlalchemy.orm import sessionmaker
 
 from app.db.base import Base
-from app.models.asset import Asset
+from app.models.asset import Asset, AssetKind
 from app.models.case import Case
 from app.models.project import Project
 from app.models.review import Review
@@ -43,5 +43,14 @@ def test_seed_demo_targets_configured_database_and_is_idempotent(
     with session_factory() as session:
         assert session.scalar(select(func.count()).select_from(Project)) == 1
         assert session.scalar(select(func.count()).select_from(Case)) == 1
-        assert session.scalar(select(func.count()).select_from(Asset)) == 1
+        assert session.scalar(select(func.count()).select_from(Asset)) == 3
         assert session.scalar(select(func.count()).select_from(Review)) == 1
+        assert {asset.kind for asset in session.scalars(select(Asset))} == {
+            AssetKind.IMAGE,
+            AssetKind.DICOM,
+            AssetKind.STL,
+        }
+        dicom = session.scalar(select(Asset).where(Asset.kind == AssetKind.DICOM))
+        assert dicom is not None
+        assert dicom.preview_path is not None
+        assert dicom.metadata_summary["body_part_examined"] == "PHANTOM"
