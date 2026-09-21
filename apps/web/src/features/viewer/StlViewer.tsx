@@ -1,11 +1,11 @@
 /* eslint-disable react-hooks/immutability -- three.js camera/controls are mutable objects by design */
-import { Component, Suspense, useEffect, useMemo, useRef, type ReactNode } from "react";
+import { Component, Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Canvas, useLoader, useThree, type ThreeEvent } from "@react-three/fiber";
 import { Html, OrbitControls } from "@react-three/drei";
 import { STLLoader } from "three/examples/jsm/loaders/STLLoader.js";
 import * as THREE from "three";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
-import { Button, Spin, Typography } from "antd";
+import { Button, Space, Spin, Typography } from "antd";
 import type { Annotation } from "../../shared/api/client";
 import { assetModelUrl } from "../../shared/api/client";
 import { markerColor } from "../../shared/markerColors";
@@ -17,12 +17,16 @@ export default function StlViewer({
   assetId,
   markers,
   onPlaceMarker,
+  highlightId = null,
 }: {
   assetId: string;
   markers: Annotation[];
   onPlaceMarker: (point: MarkerPoint) => void;
+  highlightId?: string | null;
 }) {
   const fitRef = useRef<() => void>(() => undefined);
+  const [wireframe, setWireframe] = useState(false);
+  const [transparent, setTransparent] = useState(false);
 
   return (
     <ViewerErrorBoundary assetId={assetId}>
@@ -43,6 +47,9 @@ export default function StlViewer({
               markers={markers}
               onPlaceMarker={onPlaceMarker}
               fitRef={fitRef}
+              wireframe={wireframe}
+              transparent={transparent}
+              highlightId={highlightId}
             />
           </Suspense>
           <OrbitControls makeDefault enableDamping dampingFactor={0.08} />
@@ -51,9 +58,25 @@ export default function StlViewer({
           <Typography.Text type="secondary">
             拖动旋转 · 滚轮缩放 · 右键平移 · 点击模型放置结构标记
           </Typography.Text>
-          <Button size="small" onClick={() => fitRef.current()}>
-            视角复位
-          </Button>
+          <Space size={6}>
+            <Button
+              size="small"
+              type={wireframe ? "primary" : "default"}
+              onClick={() => setWireframe((value) => !value)}
+            >
+              线框
+            </Button>
+            <Button
+              size="small"
+              type={transparent ? "primary" : "default"}
+              onClick={() => setTransparent((value) => !value)}
+            >
+              半透明
+            </Button>
+            <Button size="small" onClick={() => fitRef.current()}>
+              视角复位
+            </Button>
+          </Space>
         </div>
       </div>
     </ViewerErrorBoundary>
@@ -65,11 +88,17 @@ function StlModel({
   markers,
   onPlaceMarker,
   fitRef,
+  wireframe,
+  transparent,
+  highlightId,
 }: {
   assetId: string;
   markers: Annotation[];
   onPlaceMarker: (point: MarkerPoint) => void;
   fitRef: FitRef;
+  wireframe: boolean;
+  transparent: boolean;
+  highlightId: string | null;
 }) {
   const geometry = useLoader(STLLoader, assetModelUrl(assetId));
   const camera = useThree((state) => state.camera);
@@ -138,18 +167,46 @@ function StlModel({
         onPointerDown={handlePointerDown}
         onPointerUp={handlePointerUp}
       >
-        <meshStandardMaterial color="#4f9cf9" roughness={0.42} metalness={0.15} />
+        <meshStandardMaterial
+          color="#4f9cf9"
+          roughness={0.42}
+          metalness={0.15}
+          wireframe={wireframe}
+          transparent={transparent}
+          opacity={transparent ? 0.32 : 1}
+          depthWrite={!transparent}
+          side={transparent ? THREE.DoubleSide : THREE.FrontSide}
+        />
       </mesh>
       {markers.map((marker, index) => {
         const color = markerColor(index);
+        const position: [number, number, number] = [
+          marker.data.x ?? 0,
+          marker.data.y ?? 0,
+          marker.data.z ?? 0,
+        ];
+        const highlighted = marker.id === highlightId;
         return (
-          <mesh
-            key={marker.id}
-            position={[marker.data.x ?? 0, marker.data.y ?? 0, marker.data.z ?? 0]}
-          >
-            <sphereGeometry args={[markerRadius, 20, 20]} />
-            <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.35} />
-          </mesh>
+          <group key={marker.id}>
+            <mesh position={position} renderOrder={20}>
+              <sphereGeometry args={[highlighted ? markerRadius * 1.9 : markerRadius, 20, 20]} />
+              <meshStandardMaterial
+                color={color}
+                emissive={color}
+                emissiveIntensity={highlighted ? 0.8 : 0.4}
+                depthTest={false}
+                transparent
+              />
+            </mesh>
+            <Html position={position} center zIndexRange={[40, 0]} style={{ pointerEvents: "none" }}>
+              <span
+                className={`marker-badge${highlighted ? " marker-badge-active" : ""}`}
+                style={{ background: color }}
+              >
+                {index + 1}
+              </span>
+            </Html>
+          </group>
         );
       })}
     </>

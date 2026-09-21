@@ -639,6 +639,7 @@ function AssetDetail({ asset, caseId }: { asset: Asset; caseId: string }) {
   const [organizeForm] = Form.useForm<{ tags: string[]; note?: string }>();
   const [markerForm] = Form.useForm<{ label: string }>();
   const [pendingMarker, setPendingMarker] = useState<MarkerPoint | null>(null);
+  const [highlightMarkerId, setHighlightMarkerId] = useState<string | null>(null);
   const [messageApi, contextHolder] = message.useMessage();
   const { message: globalMessage } = AntApp.useApp();
 
@@ -705,6 +706,7 @@ function AssetDetail({ asset, caseId }: { asset: Asset; caseId: string }) {
               assetId={asset.id}
               markers={markers}
               onPlaceMarker={(point) => setPendingMarker(point)}
+              highlightId={highlightMarkerId}
             />
           </Suspense>
         ) : asset.preview_available && !imageFailed ? (
@@ -775,7 +777,12 @@ function AssetDetail({ asset, caseId }: { asset: Asset; caseId: string }) {
           ) : (
             <div className="marker-list">
               {markers.map((marker: Annotation, index: number) => (
-                <div key={marker.id} className="marker-item">
+                <div
+                  key={marker.id}
+                  className="marker-item"
+                  onMouseEnter={() => setHighlightMarkerId(marker.id)}
+                  onMouseLeave={() => setHighlightMarkerId(null)}
+                >
                   <span
                     className="marker-dot"
                     style={{ background: markerColor(index), boxShadow: `0 0 0 3px ${markerColor(index)}33` }}
