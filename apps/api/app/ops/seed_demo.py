@@ -21,9 +21,9 @@ DEMO_CASE_CODE = "DEMO-TAVR-001"
 def seed_demo(sample_root: Path) -> tuple[str, str]:
     settings = get_settings()
     sample_files = [
-        (sample_root / "image" / "synthetic-cardiac-ct-baseline.png", "image/png"),
-        (sample_root / "dicom" / "CT_small_anonymized.dcm", "application/dicom"),
-        (sample_root / "stl" / "aorta.stl", "model/stl"),
+        (sample_root / "image" / "synthetic-cardiac-ct-baseline.png", "image/png", ["基线图"]),
+        (sample_root / "dicom" / "CT_small_anonymized.dcm", "application/dicom", ["CT", "已脱敏"]),
+        (sample_root / "stl" / "aorta.stl", "model/stl", ["主动脉", "3D 模型"]),
     ]
     with SessionLocal() as db:
         project = db.scalar(select(Project).where(Project.name == DEMO_PROJECT_NAME))
@@ -51,7 +51,7 @@ def seed_demo(sample_root: Path) -> tuple[str, str]:
         existing = {
             asset.sha256 for asset in db.scalars(select(Asset).where(Asset.case_id == case.id))
         }
-        for path, content_type in sample_files:
+        for path, content_type, tags in sample_files:
             if not path.exists():
                 continue
             content = path.read_bytes()
@@ -75,6 +75,7 @@ def seed_demo(sample_root: Path) -> tuple[str, str]:
                 preview_path=prepared.preview_path,
                 metadata_summary=prepared.metadata_summary,
                 ingest_warnings=prepared.ingest_warnings,
+                tags=tags,
             )
             db.add(asset)
             db.flush()

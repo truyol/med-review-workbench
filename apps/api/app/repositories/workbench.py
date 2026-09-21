@@ -3,6 +3,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session, selectinload
 
 from app.domain.errors import persistence_failed
+from app.models.annotation import Annotation
 from app.models.asset import Asset, AssetKind, AssetStatus
 from app.models.case import Case
 from app.models.project import Project
@@ -71,6 +72,7 @@ class WorkbenchRepository:
         offset: int,
         kind: AssetKind | None = None,
         status: AssetStatus | None = None,
+        tag: str | None = None,
     ) -> list[Asset]:
         filters = [Asset.case_id == case_id, Asset.deleted_at.is_(None)]
         if kind is not None:
@@ -78,15 +80,43 @@ class WorkbenchRepository:
         if status is not None:
             filters.append(Asset.status == status)
 
-        return list(
+        assets = list(
             self.db.scalars(
-                select(Asset)
-                .where(*filters)
-                .order_by(Asset.created_at.desc())
-                .limit(limit)
-                .offset(offset),
+                select(Asset).where(*filters).order_by(Asset.created_at.desc()),
             ),
         )
+        # JSON tag containment is not portable across backends; filter in Python
+        # before slicing. Case asset counts are small in this workbench.
+        if tag is not None:
+            assets = [asset for asset in assets if tag in (asset.tags or [])]
+        return assets[offset : offset + limit]
+
+    def update_asset(self, asset: Asset) -> Asset:
+        self._commit()
+        self.db.refresh(asset)
+        return asset
+
+    def add_annotation(self, annotation: Annotation) -> Annotation:
+        self.db.add(annotation)
+        self._commit()
+        self.db.refresh(annotation)
+        return annotation
+
+    def list_annotations(self, asset_id: str) -> list[Annotation]:
+        return list(
+            self.db.scalars(
+                select(Annotation)
+                .where(Annotation.asset_id == asset_id)
+                .order_by(Annotation.created_at),
+            ),
+        )
+
+    def get_annotation(self, annotation_id: str) -> Annotation | None:
+        return self.db.get(Annotation, annotation_id)
+
+    def delete_annotation(self, annotation: Annotation) -> None:
+        self.db.delete(annotation)
+        self._commit()
 
     def add_review(self, review: Review) -> Review:
         self.db.add(review)

@@ -5,6 +5,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.domain.errors import (
+    annotation_not_found,
     asset_delete_restricted,
     asset_file_missing,
     asset_not_found,
@@ -14,12 +15,19 @@ from app.domain.errors import (
     preview_not_available,
     project_not_found,
 )
+from app.models.annotation import Annotation
 from app.models.asset import Asset, AssetKind, AssetStatus
 from app.models.case import Case
 from app.models.project import Project
 from app.models.review import Review, ReviewDecision
 from app.repositories.workbench import WorkbenchRepository
-from app.schemas.workbench import CaseCreate, ProjectCreate, ReviewCreate
+from app.schemas.workbench import (
+    AnnotationCreate,
+    AssetUpdate,
+    CaseCreate,
+    ProjectCreate,
+    ReviewCreate,
+)
 from app.services.asset_processing import prepare_asset_upload
 from app.settings import Settings
 
@@ -104,6 +112,7 @@ class WorkbenchService:
         offset: int,
         kind: AssetKind | None = None,
         status: AssetStatus | None = None,
+        tag: str | None = None,
     ) -> Sequence[Asset]:
         self._require_case(case_id)
         return self.repo.list_case_assets(
@@ -112,7 +121,37 @@ class WorkbenchService:
             offset=offset,
             kind=kind,
             status=status,
+            tag=tag,
         )
+
+    def update_asset(self, *, asset_id: str, payload: AssetUpdate) -> Asset:
+        asset = self._require_asset(asset_id)
+        if payload.tags is not None:
+            asset.tags = payload.tags
+        if payload.note is not None:
+            asset.note = payload.note
+        return self.repo.update_asset(asset)
+
+    def add_annotation(self, *, asset_id: str, payload: AnnotationCreate) -> Annotation:
+        self._require_asset(asset_id)
+        return self.repo.add_annotation(
+            Annotation(
+                asset_id=asset_id,
+                label=payload.label,
+                data=payload.data,
+                note=payload.note,
+            ),
+        )
+
+    def list_annotations(self, *, asset_id: str) -> Sequence[Annotation]:
+        self._require_asset(asset_id)
+        return self.repo.list_annotations(asset_id)
+
+    def delete_annotation(self, *, annotation_id: str) -> None:
+        annotation = self.repo.get_annotation(annotation_id)
+        if annotation is None:
+            raise annotation_not_found()
+        self.repo.delete_annotation(annotation)
 
     def review_asset(self, *, asset_id: str, payload: ReviewCreate) -> Review:
         asset = self.repo.get_asset(asset_id)

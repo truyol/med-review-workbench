@@ -65,3 +65,76 @@ test("real backend unsupported upload exposes recoverable next action", async ({
   });
   await expect(page.getByText("Upload a supported, de-identified review asset.")).toBeVisible();
 });
+
+test("real backend persists asset tags and note", async ({ page, request }) => {
+  const suffix = Date.now().toString();
+  const project = await (await request.post("/api/v1/projects", { data: { name: `P9 Tags ${suffix}` } })).json();
+  const created = await (
+    await request.post(`/api/v1/projects/${project.data.id}/cases`, {
+      data: { case_code: `TAG-${suffix}`, title: "Tag persistence" },
+    })
+  ).json();
+  const caseId = created.data.id;
+  const uploaded = await (
+    await request.post(`/api/v1/cases/${caseId}/assets`, {
+      multipart: { file: { name: "tag.png", mimeType: "image/png", buffer: png } },
+    })
+  ).json();
+  const assetId = uploaded.data.id;
+
+  await page.goto(`/assets/${assetId}?caseId=${caseId}`);
+  await page.getByLabel("标签").click();
+  await page.getByLabel("标签").fill("瓣膜");
+  await page.keyboard.press("Enter");
+  await page.getByLabel("备注").fill("E2E 标签与备注验证");
+  await page.getByRole("button", { name: "保存标签与备注" }).click();
+  await expect(page.getByText("标签与备注已保存")).toBeVisible();
+
+  const assets = await (await request.get(`/api/v1/cases/${caseId}/assets`)).json();
+  expect(assets.data[0].tags).toContain("瓣膜");
+  expect(assets.data[0].note).toBe("E2E 标签与备注验证");
+});
+
+test("real backend persists a structure marker on the seeded STL asset", async ({ page, request }) => {
+  const projects = await (await request.get("/api/v1/projects?limit=100")).json();
+  const demo = projects.data.find((item: { name: string }) => item.name.includes("SHD"));
+  expect(demo).toBeTruthy();
+  const cases = await (await request.get(`/api/v1/projects/${demo.id}/cases?limit=100`)).json();
+  const caseId = cases.data[0].id;
+  const board = await (await request.get(`/api/v1/cases/${caseId}/review-board`)).json();
+  const stl = board.data.assets.find((item: { asset: { kind: string } }) => item.asset.kind === "stl").asset;
+
+  await page.goto(`/assets/${stl.id}?caseId=${caseId}`);
+  await expect(page.getByText("结构标记", { exact: true })).toBeVisible();
+
+  // The aorta is a tubular mesh, so some rays pass through the lumen. Sweep a
+  // grid of points until one lands on the surface and opens the marker dialog.
+  const canvas = page.locator(".stl-viewer canvas");
+  const box = await canvas.boundingBox();
+  expect(box).toBeTruthy();
+  const fractions = [0.5, 0.4, 0.6, 0.3, 0.7, 0.2, 0.8];
+  let dialogOpen = false;
+  for (const fx of fractions) {
+    for (const fy of fractions) {
+      await canvas.click({ position: { x: box!.width * fx, y: box!.height * fy } });
+      dialogOpen = await page
+        .getByLabel("结构名称")
+        .isVisible()
+        .catch(() => false);
+      if (dialogOpen) {
+        break;
+      }
+    }
+    if (dialogOpen) {
+      break;
+    }
+  }
+  expect(dialogOpen, "clicking the model should open the marker dialog").toBe(true);
+
+  await page.getByLabel("结构名称").fill("主动脉瓣环");
+  await page.locator(".ant-modal-footer .ant-btn-primary").click();
+  await expect(page.getByText("主动脉瓣环")).toBeVisible();
+
+  const annotations = await (await request.get(`/api/v1/assets/${stl.id}/annotations`)).json();
+  expect(annotations.data.some((item: { label: string }) => item.label === "主动脉瓣环")).toBe(true);
+});

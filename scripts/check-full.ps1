@@ -75,8 +75,19 @@ try {
     Write-Host 'Python dependency audit'
     Push-Location $apiRoot
     try {
-        & $apiPython -m pip_audit --local --progress-spinner off --timeout 60
-        Assert-NativeCommandSucceeded 'Python dependency audit'
+        $auditOk = $false
+        for ($attempt = 1; $attempt -le 3 -and -not $auditOk; $attempt++) {
+            & $apiPython -m pip_audit --local --progress-spinner off --timeout 60
+            if ($LASTEXITCODE -eq 0) {
+                $auditOk = $true
+            } else {
+                Write-Warning "Python dependency audit attempt $attempt failed (network flake?); retrying"
+                Start-Sleep -Seconds 5
+            }
+        }
+        if (-not $auditOk) {
+            throw 'Python dependency audit failed after 3 attempts.'
+        }
     }
     finally {
         Pop-Location
@@ -85,8 +96,19 @@ try {
     Write-Host 'Node production dependency audit'
     Push-Location $webRoot
     try {
-        npm.cmd audit --omit=dev --audit-level=high
-        Assert-NativeCommandSucceeded 'Node dependency audit'
+        $npmAuditOk = $false
+        for ($attempt = 1; $attempt -le 3 -and -not $npmAuditOk; $attempt++) {
+            npm.cmd audit --omit=dev --audit-level=high
+            if ($LASTEXITCODE -eq 0) {
+                $npmAuditOk = $true
+            } else {
+                Write-Warning "Node dependency audit attempt $attempt failed (network flake?); retrying"
+                Start-Sleep -Seconds 5
+            }
+        }
+        if (-not $npmAuditOk) {
+            throw 'Node dependency audit failed after 3 attempts.'
+        }
     }
     finally {
         Pop-Location

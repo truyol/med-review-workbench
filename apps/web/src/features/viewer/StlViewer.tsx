@@ -1,13 +1,25 @@
-import { Component, Suspense, useEffect, useRef, type ReactNode } from "react";
-import { Canvas, useLoader } from "@react-three/fiber";
+import { Component, Suspense, useEffect, useMemo, useRef, type ReactNode } from "react";
+import { Canvas, useLoader, type ThreeEvent } from "@react-three/fiber";
 import { Bounds, OrbitControls, useBounds } from "@react-three/drei";
 import { STLLoader } from "three/examples/jsm/loaders/STLLoader.js";
+import * as THREE from "three";
 import { Button, Typography } from "antd";
+import type { Annotation } from "../../shared/api/client";
 import { assetModelUrl } from "../../shared/api/client";
 
 type FitRef = { current: () => void };
 
-export default function StlViewer({ assetId }: { assetId: string }) {
+export type MarkerPoint = { x: number; y: number; z: number };
+
+export default function StlViewer({
+  assetId,
+  markers,
+  onPlaceMarker,
+}: {
+  assetId: string;
+  markers: Annotation[];
+  onPlaceMarker: (point: MarkerPoint) => void;
+}) {
   const fitRef = useRef<() => void>(() => undefined);
 
   return (
@@ -18,15 +30,15 @@ export default function StlViewer({ assetId }: { assetId: string }) {
           <directionalLight position={[140, 180, 220]} intensity={1.15} />
           <directionalLight position={[-160, -120, -140]} intensity={0.35} />
           <Suspense fallback={null}>
-            <Bounds fit clip observe margin={1.25}>
+            <Bounds fit observe margin={1.2}>
               <FitController fitRef={fitRef} />
-              <StlModel assetId={assetId} />
+              <StlModel assetId={assetId} markers={markers} onPlaceMarker={onPlaceMarker} />
             </Bounds>
           </Suspense>
           <OrbitControls makeDefault enableDamping dampingFactor={0.08} />
         </Canvas>
         <div className="stl-toolbar">
-          <Typography.Text type="secondary">拖动旋转 · 滚轮缩放 · 右键平移</Typography.Text>
+          <Typography.Text type="secondary">拖动旋转 · 滚轮缩放 · 右键平移 · 点击模型放置结构标记</Typography.Text>
           <Button size="small" onClick={() => fitRef.current()}>
             视角复位
           </Button>
@@ -46,19 +58,70 @@ function FitController({ fitRef }: { fitRef: FitRef }) {
   return null;
 }
 
-function StlModel({ assetId }: { assetId: string }) {
+function StlModel({
+  assetId,
+  markers,
+  onPlaceMarker,
+}: {
+  assetId: string;
+  markers: Annotation[];
+  onPlaceMarker: (point: MarkerPoint) => void;
+}) {
   const geometry = useLoader(STLLoader, assetModelUrl(assetId));
+  const meshRef = useRef<THREE.Mesh>(null);
+  const pointerDown = useRef<{ x: number; y: number } | null>(null);
 
-  useEffect(() => {
-    // Center the mesh so rotation feels natural, then rebuild normals for shading.
+  // Normalize the geometry once per loaded model and derive a marker size that
+  // scales with the model. Both operations are idempotent.
+  const markerRadius = useMemo(() => {
     geometry.center();
     geometry.computeVertexNormals();
+    geometry.computeBoundingSphere();
+    return Math.max((geometry.boundingSphere?.radius ?? 100) * 0.025, 0.01);
   }, [geometry]);
 
+  const handlePointerDown = (event: ThreeEvent<PointerEvent>) => {
+    pointerDown.current = { x: event.clientX, y: event.clientY };
+  };
+
+  const handlePointerUp = (event: ThreeEvent<PointerEvent>) => {
+    const start = pointerDown.current;
+    pointerDown.current = null;
+    if (!start || !meshRef.current) {
+      return;
+    }
+    // Ignore orbit drags: only a near-stationary press places a marker.
+    const moved = Math.hypot(event.clientX - start.x, event.clientY - start.y);
+    if (moved > 4) {
+      return;
+    }
+    event.stopPropagation();
+    // Convert the world-space hit point back into the centered model space so the
+    // stored marker stays aligned with the geometry on reload.
+    const local = meshRef.current.worldToLocal(event.point.clone());
+    onPlaceMarker({ x: local.x, y: local.y, z: local.z });
+  };
+
   return (
-    <mesh geometry={geometry}>
-      <meshStandardMaterial color="#4f9cf9" roughness={0.42} metalness={0.15} />
-    </mesh>
+    <>
+      <mesh
+        ref={meshRef}
+        geometry={geometry}
+        onPointerDown={handlePointerDown}
+        onPointerUp={handlePointerUp}
+      >
+        <meshStandardMaterial color="#4f9cf9" roughness={0.42} metalness={0.15} />
+      </mesh>
+      {markers.map((marker) => (
+        <mesh
+          key={marker.id}
+          position={[marker.data.x ?? 0, marker.data.y ?? 0, marker.data.z ?? 0]}
+        >
+          <sphereGeometry args={[markerRadius, 16, 16]} />
+          <meshStandardMaterial color="#faad14" emissive="#d48806" emissiveIntensity={0.5} />
+        </mesh>
+      ))}
+    </>
   );
 }
 

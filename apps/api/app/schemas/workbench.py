@@ -48,6 +48,31 @@ class AssetRead(BaseModel):
     preview_available: bool
     metadata_summary: dict[str, object]
     ingest_warnings: list[str]
+    tags: list[str]
+    note: str | None
+    created_at: datetime
+    updated_at: datetime
+
+
+class AssetUpdate(BaseModel):
+    tags: list[str] | None = Field(default=None, max_length=20)
+    note: str | None = Field(default=None, max_length=1000)
+
+
+class AnnotationCreate(BaseModel):
+    label: str = Field(min_length=1, max_length=120)
+    data: dict[str, float] = Field(default_factory=dict)
+    note: str | None = Field(default=None, max_length=1000)
+
+
+class AnnotationRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    asset_id: str
+    label: str
+    data: dict[str, object]
+    note: str | None
     created_at: datetime
     updated_at: datetime
 

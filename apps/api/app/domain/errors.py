@@ -125,3 +125,12 @@ def asset_delete_restricted() -> ApiError:
         next_action="Keep the review history and mark the asset out of scope instead.",
         status_code=HTTPStatus.CONFLICT,
     )
+
+
+def annotation_not_found() -> ApiError:
+    return ApiError(
+        code="ANNOTATION_NOT_FOUND",
+        message="Annotation was not found.",
+        next_action="Refresh the asset annotations and try again.",
+        status_code=HTTPStatus.NOT_FOUND,
+    )

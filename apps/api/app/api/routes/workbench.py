@@ -11,7 +11,10 @@ from app.models.case import Case
 from app.models.review import Review
 from app.schemas.common import ApiResponse, response_with_meta
 from app.schemas.workbench import (
+    AnnotationCreate,
+    AnnotationRead,
     AssetRead,
+    AssetUpdate,
     CaseCreate,
     CaseRead,
     ProjectCreate,
@@ -122,6 +125,7 @@ def list_assets(
     offset: OffsetQuery = 0,
     kind: AssetKind | None = None,
     asset_status: Annotated[AssetStatus | None, Query(alias="status")] = None,
+    tag: Annotated[str | None, Query(max_length=40)] = None,
 ) -> ApiResponse[list[AssetRead]]:
     assets = service.list_assets(
         case_id=case_id,
@@ -129,8 +133,53 @@ def list_assets(
         offset=offset,
         kind=kind,
         status=asset_status,
+        tag=tag,
     )
     return response_with_meta([_asset_read(asset) for asset in assets])
+
+
+@router.patch("/assets/{asset_id}", response_model=ApiResponse[AssetRead])
+def update_asset(
+    asset_id: str,
+    payload: AssetUpdate,
+    service: Annotated[WorkbenchService, Depends(get_service)],
+) -> ApiResponse[AssetRead]:
+    asset = service.update_asset(asset_id=asset_id, payload=payload)
+    return response_with_meta(_asset_read(asset))
+
+
+@router.post(
+    "/assets/{asset_id}/annotations",
+    response_model=ApiResponse[AnnotationRead],
+    status_code=status.HTTP_201_CREATED,
+)
+def create_annotation(
+    asset_id: str,
+    payload: AnnotationCreate,
+    service: Annotated[WorkbenchService, Depends(get_service)],
+) -> ApiResponse[AnnotationRead]:
+    annotation = service.add_annotation(asset_id=asset_id, payload=payload)
+    return response_with_meta(AnnotationRead.model_validate(annotation))
+
+
+@router.get(
+    "/assets/{asset_id}/annotations",
+    response_model=ApiResponse[list[AnnotationRead]],
+)
+def list_annotations(
+    asset_id: str,
+    service: Annotated[WorkbenchService, Depends(get_service)],
+) -> ApiResponse[list[AnnotationRead]]:
+    annotations = service.list_annotations(asset_id=asset_id)
+    return response_with_meta([AnnotationRead.model_validate(item) for item in annotations])
+
+
+@router.delete("/annotations/{annotation_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_annotation(
+    annotation_id: str,
+    service: Annotated[WorkbenchService, Depends(get_service)],
+) -> None:
+    service.delete_annotation(annotation_id=annotation_id)
 
 
 @router.post(
@@ -195,6 +244,8 @@ def _asset_read(asset: Asset) -> AssetRead:
         preview_available=asset.preview_path is not None,
         metadata_summary=asset.metadata_summary,
         ingest_warnings=asset.ingest_warnings,
+        tags=list(asset.tags or []),
+        note=asset.note,
         created_at=asset.created_at,
         updated_at=asset.updated_at,
     )

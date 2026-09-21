@@ -1,4 +1,4 @@
-﻿import { lazy, Suspense, useState, type ReactNode } from "react";
+﻿import { lazy, Suspense, useMemo, useState, type ReactNode } from "react";
 import {
   BrowserRouter,
   Link,
@@ -25,6 +25,7 @@ import {
   Progress,
   Result,
   Select,
+  Space,
   Spin,
   Tag,
   Typography,
@@ -39,22 +40,29 @@ import {
   PlusOutlined,
   SafetyCertificateOutlined,
   ScanOutlined,
+  SwapOutlined,
 } from "@ant-design/icons";
 import zhCN from "antd/locale/zh_CN";
 
 import {
   ApiError,
   assetPreviewUrl,
+  createAnnotation,
   createCase,
   createProject,
+  deleteAnnotation,
+  fetchAnnotations,
   fetchCases,
   fetchProjects,
   fetchReviewBoard,
   reviewAsset,
+  updateAsset,
   uploadAsset,
+  type Annotation,
   type Asset,
   type Review,
 } from "../shared/api/client";
+import type { MarkerPoint } from "../features/viewer/StlViewer";
 
 const StlViewer = lazy(() => import("../features/viewer/StlViewer"));
 
@@ -91,7 +99,7 @@ function ErrorNotice({ error, retry }: { error: unknown; retry?: () => void }) {
     <Alert
       type="error"
       showIcon
-      title={apiError?.message ?? "页面加载失败"}
+      message={apiError?.message ?? "页面加载失败"}
       description={apiError?.nextAction ?? "请检查 API 服务后重试"}
       action={
         retry ? (
@@ -117,9 +125,7 @@ function Shell({ children }: { children: ReactNode }) {
             <em>结构性心脏病术前规划 · 素材评审闭环</em>
           </span>
         </Link>
-        <Tag className="env-tag">
-          工程评审原型 · 不用于临床
-        </Tag>
+        <Tag className="env-tag">工程评审原型 · 不用于临床</Tag>
       </Header>
       <Content className="app-content">{children}</Content>
       <footer className="app-footer">
@@ -321,11 +327,62 @@ function ProjectPage() {
   );
 }
 
+function CompareModal({
+  open,
+  onClose,
+  images,
+}: {
+  open: boolean;
+  onClose: () => void;
+  images: Asset[];
+}) {
+  const [left, setLeft] = useState<string | undefined>();
+  const [right, setRight] = useState<string | undefined>();
+  const options = images.map((asset) => ({ value: asset.id, label: asset.source_label }));
+
+  return (
+    <Modal title="图片并排比较" open={open} onCancel={onClose} footer={null} width={920}>
+      <Space style={{ marginBottom: 16 }}>
+        <Select
+          placeholder="选择左侧图片"
+          style={{ width: 280 }}
+          options={options}
+          value={left}
+          onChange={setLeft}
+        />
+        <Select
+          placeholder="选择右侧图片"
+          style={{ width: 280 }}
+          options={options}
+          value={right}
+          onChange={setRight}
+        />
+      </Space>
+      <div className="compare-grid">
+        {left ? (
+          <img src={assetPreviewUrl(left)} alt="左侧素材" />
+        ) : (
+          <Empty description="选择左侧图片" />
+        )}
+        {right ? (
+          <img src={assetPreviewUrl(right)} alt="右侧素材" />
+        ) : (
+          <Empty description="选择右侧图片" />
+        )}
+      </div>
+    </Modal>
+  );
+}
+
 function CasePage() {
   const { caseId = "" } = useParams();
   const navigate = useNavigate();
   const client = useQueryClient();
   const [messageApi, contextHolder] = message.useMessage();
+  const [kindFilter, setKindFilter] = useState<string | undefined>();
+  const [statusFilter, setStatusFilter] = useState<string | undefined>();
+  const [tagFilter, setTagFilter] = useState<string | undefined>();
+  const [compareOpen, setCompareOpen] = useState(false);
   const board = useQuery({
     queryKey: ["review-board", caseId],
     queryFn: () => fetchReviewBoard(caseId),
@@ -341,7 +398,18 @@ function CasePage() {
       messageApi.error(error instanceof ApiError ? error.nextAction : "上传失败"),
   });
 
-  const assets = board.data?.assets ?? [];
+  const assets = useMemo(() => board.data?.assets ?? [], [board.data]);
+  const allTags = useMemo(
+    () => Array.from(new Set(assets.flatMap((item) => item.asset.tags))).sort(),
+    [assets],
+  );
+  const visible = assets.filter(
+    ({ asset }) =>
+      (!kindFilter || asset.kind === kindFilter) &&
+      (!statusFilter || asset.status === statusFilter) &&
+      (!tagFilter || asset.tags.includes(tagFilter)),
+  );
+  const images = assets.map((item) => item.asset).filter((asset) => asset.kind === "image");
   const reviewed = assets.filter((item) => item.asset.status !== "pending").length;
   const percent = assets.length === 0 ? 0 : Math.round((reviewed / assets.length) * 100);
 
@@ -351,18 +419,27 @@ function CasePage() {
       subtitle="先上传素材，再逐项确认状态与评审结论。"
       back={board.data?.case ? `/projects/${board.data.case.project_id}` : "/projects"}
       action={
-        <Upload
-          showUploadList={false}
-          beforeUpload={(file) => {
-            upload.mutate(file);
-            return false;
-          }}
-          accept=".dcm,.dicom,.stl,.png,.jpg,.jpeg"
-        >
-          <Button type="primary" icon={<InboxOutlined />} loading={upload.isPending}>
-            上传素材
+        <Space>
+          <Button
+            icon={<SwapOutlined />}
+            disabled={images.length < 2}
+            onClick={() => setCompareOpen(true)}
+          >
+            并排比较
           </Button>
-        </Upload>
+          <Upload
+            showUploadList={false}
+            beforeUpload={(file) => {
+              upload.mutate(file);
+              return false;
+            }}
+            accept=".dcm,.dicom,.stl,.png,.jpg,.jpeg"
+          >
+            <Button type="primary" icon={<InboxOutlined />} loading={upload.isPending}>
+              上传素材
+            </Button>
+          </Upload>
+        </Space>
       }
     >
       {contextHolder}
@@ -385,7 +462,7 @@ function CasePage() {
                 <div className="board-summary-label">已评审</div>
               </div>
               <div className="board-summary-progress">
-                <Progress percent={percent} strokeColor="#1677ff" />
+                <Progress percent={percent} strokeColor="#1668dc" />
                 <Typography.Text type="secondary">状态由最新评审记录派生</Typography.Text>
               </div>
             </div>
@@ -394,38 +471,85 @@ function CasePage() {
           {assets.length === 0 ? (
             <Empty description="还没有素材，请上传 DICOM、图片或 STL" />
           ) : (
-            <div className="asset-grid">
-              {assets.map(({ asset, latest_review }) => (
-                <Card key={asset.id} hoverable className="asset-card">
-                  <div className="asset-card-head">
-                    <span className={`asset-icon ${asset.kind}`}>{kindIcon[asset.kind]}</span>
-                    <div className="asset-card-title">
-                      <div>{asset.source_label}</div>
-                      <Typography.Text type="secondary">{kindLabel[asset.kind]}</Typography.Text>
-                    </div>
-                    <Tag color={statusColor[asset.status]}>{statusLabel[asset.status]}</Tag>
-                  </div>
-                  <Descriptions column={1} size="small" className="asset-card-meta">
-                    <Descriptions.Item label="大小">{formatBytes(asset.size_bytes)}</Descriptions.Item>
-                    <Descriptions.Item label="哈希">{asset.sha256.slice(0, 12)}…</Descriptions.Item>
-                    <Descriptions.Item label="最近评审">
-                      {latest_review ? latest_review.reviewer_name : "暂无"}
-                    </Descriptions.Item>
-                  </Descriptions>
-                  <Button
-                    type="primary"
-                    ghost
-                    block
-                    onClick={() => navigate(`/assets/${asset.id}?caseId=${caseId}`)}
-                  >
-                    查看
-                  </Button>
-                </Card>
-              ))}
-            </div>
+            <>
+              <Space wrap className="board-filters">
+                <Select
+                  allowClear
+                  placeholder="类型"
+                  style={{ width: 140 }}
+                  value={kindFilter}
+                  onChange={setKindFilter}
+                  options={[
+                    { value: "dicom", label: "DICOM" },
+                    { value: "image", label: "图片" },
+                    { value: "stl", label: "3D 模型" },
+                  ]}
+                />
+                <Select
+                  allowClear
+                  placeholder="状态"
+                  style={{ width: 140 }}
+                  value={statusFilter}
+                  onChange={setStatusFilter}
+                  options={Object.entries(statusLabel).map(([value, label]) => ({ value, label }))}
+                />
+                <Select
+                  allowClear
+                  placeholder="标签"
+                  style={{ width: 180 }}
+                  value={tagFilter}
+                  onChange={setTagFilter}
+                  options={allTags.map((tag) => ({ value: tag, label: tag }))}
+                />
+              </Space>
+
+              {visible.length === 0 ? (
+                <Empty description="没有符合筛选条件的素材" />
+              ) : (
+                <div className="asset-grid">
+                  {visible.map(({ asset, latest_review }) => (
+                    <Card key={asset.id} hoverable className="asset-card">
+                      <div className="asset-card-head">
+                        <span className={`asset-icon ${asset.kind}`}>{kindIcon[asset.kind]}</span>
+                        <div className="asset-card-title">
+                          <div>{asset.source_label}</div>
+                          <Typography.Text type="secondary">{kindLabel[asset.kind]}</Typography.Text>
+                        </div>
+                        <Tag color={statusColor[asset.status]}>{statusLabel[asset.status]}</Tag>
+                      </div>
+                      {asset.tags.length > 0 && (
+                        <div className="asset-card-tags">
+                          {asset.tags.map((tag) => (
+                            <Tag key={tag} bordered={false}>
+                              {tag}
+                            </Tag>
+                          ))}
+                        </div>
+                      )}
+                      <Descriptions column={1} size="small" className="asset-card-meta">
+                        <Descriptions.Item label="大小">{formatBytes(asset.size_bytes)}</Descriptions.Item>
+                        <Descriptions.Item label="哈希">{asset.sha256.slice(0, 12)}…</Descriptions.Item>
+                        <Descriptions.Item label="最近评审">
+                          {latest_review ? latest_review.reviewer_name : "暂无"}
+                        </Descriptions.Item>
+                      </Descriptions>
+                      <Button
+                        type="primary"
+                        ghost
+                        block
+                        onClick={() => navigate(`/assets/${asset.id}?caseId=${caseId}`)}
+                      >
+                        查看
+                      </Button>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </>
           )}
         </>
       )}
+      <CompareModal open={compareOpen} onClose={() => setCompareOpen(false)} images={images} />
     </Page>
   );
 }
@@ -444,7 +568,7 @@ function AssetPage() {
   if (!caseId) {
     return (
       <Page title="素材详情" back="/projects">
-        <Alert type="warning" title="缺少病例上下文" description="请从病例评审看板进入素材详情。" />
+        <Alert type="warning" message="缺少病例上下文" description="请从病例评审看板进入素材详情。" />
       </Page>
     );
   }
@@ -485,17 +609,49 @@ function AssetPage() {
 function AssetDetail({ asset, caseId }: { asset: Asset; caseId: string }) {
   const client = useQueryClient();
   const [imageFailed, setImageFailed] = useState(false);
-  const [form] = Form.useForm<{ decision: Review["decision"]; note?: string; reviewer_name: string }>();
+  const [reviewForm] = Form.useForm<{ decision: Review["decision"]; note?: string; reviewer_name: string }>();
+  const [organizeForm] = Form.useForm<{ tags: string[]; note?: string }>();
+  const [markerForm] = Form.useForm<{ label: string }>();
+  const [pendingMarker, setPendingMarker] = useState<MarkerPoint | null>(null);
   const [messageApi, contextHolder] = message.useMessage();
-  const mutation = useMutation({
+
+  const annotations = useQuery({
+    queryKey: ["annotations", asset.id],
+    queryFn: () => fetchAnnotations(asset.id),
+  });
+
+  const reviewMutation = useMutation({
     mutationFn: (payload: { decision: Review["decision"]; note?: string; reviewer_name: string }) =>
       reviewAsset(asset.id, payload),
     onSuccess: () => {
       client.invalidateQueries({ queryKey: ["review-board", caseId] });
       messageApi.success("评审已保存");
-      form.resetFields();
+      reviewForm.resetFields();
     },
   });
+  const organizeMutation = useMutation({
+    mutationFn: (payload: { tags?: string[]; note?: string | null }) => updateAsset(asset.id, payload),
+    onSuccess: () => {
+      client.invalidateQueries({ queryKey: ["review-board", caseId] });
+      messageApi.success("标签与备注已保存");
+    },
+  });
+  const addMarkerMutation = useMutation({
+    mutationFn: (payload: { label: string; data: MarkerPoint }) =>
+      createAnnotation(asset.id, { label: payload.label, data: payload.data }),
+    onSuccess: () => {
+      client.invalidateQueries({ queryKey: ["annotations", asset.id] });
+      messageApi.success("结构标记已保存");
+      setPendingMarker(null);
+      markerForm.resetFields();
+    },
+  });
+  const deleteMarkerMutation = useMutation({
+    mutationFn: (annotationId: string) => deleteAnnotation(annotationId),
+    onSuccess: () => client.invalidateQueries({ queryKey: ["annotations", asset.id] }),
+  });
+
+  const markers = annotations.data ?? [];
 
   return (
     <div className="asset-detail">
@@ -509,7 +665,11 @@ function AssetDetail({ asset, caseId }: { asset: Asset; caseId: string }) {
               </div>
             }
           >
-            <StlViewer assetId={asset.id} />
+            <StlViewer
+              assetId={asset.id}
+              markers={markers}
+              onPlaceMarker={(point) => setPendingMarker(point)}
+            />
           </Suspense>
         ) : asset.preview_available && !imageFailed ? (
           <img
@@ -522,7 +682,7 @@ function AssetDetail({ asset, caseId }: { asset: Asset; caseId: string }) {
           <Alert
             type="warning"
             showIcon
-            title="图片预览不可用"
+            message="图片预览不可用"
             description="请重试，或改看右侧的元数据信息。"
             action={
               <Button size="small" onClick={() => setImageFailed(false)}>
@@ -546,15 +706,62 @@ function AssetDetail({ asset, caseId }: { asset: Asset; caseId: string }) {
           </Descriptions>
         )}
         {asset.ingest_warnings.map((warning) => (
-          <Alert key={warning} type="warning" showIcon title={warning} className="warning-item" />
+          <Alert key={warning} type="warning" showIcon message={warning} className="warning-item" />
         ))}
       </Card>
 
+      <Card title="标签与备注" className="organize-card" variant="borderless">
+        <Form
+          form={organizeForm}
+          layout="vertical"
+          initialValues={{ tags: asset.tags, note: asset.note ?? undefined }}
+          onFinish={(values) => organizeMutation.mutate({ tags: values.tags, note: values.note ?? null })}
+        >
+          <Form.Item name="tags" label="标签">
+            <Select mode="tags" placeholder="输入后回车，例如：瓣膜 / 待补图" tokenSeparators={[",", "，"]} />
+          </Form.Item>
+          <Form.Item name="note" label="备注">
+            <Input.TextArea rows={2} placeholder="素材整理说明，不填写患者信息" />
+          </Form.Item>
+          <Button htmlType="submit" loading={organizeMutation.isPending} block>
+            保存标签与备注
+          </Button>
+        </Form>
+      </Card>
+
+      {asset.kind === "stl" && (
+        <Card title="结构标记" className="marker-card" variant="borderless">
+          <Typography.Paragraph type="secondary">
+            在左侧模型上点击即可添加标记点。
+          </Typography.Paragraph>
+          {markers.length === 0 ? (
+            <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="还没有标记点" />
+          ) : (
+            <div className="marker-list">
+              {markers.map((marker: Annotation) => (
+                <div key={marker.id} className="marker-item">
+                  <span className="marker-dot" />
+                  <span className="marker-label">{marker.label}</span>
+                  <Button
+                    size="small"
+                    type="text"
+                    danger
+                    onClick={() => deleteMarkerMutation.mutate(marker.id)}
+                  >
+                    删除
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+        </Card>
+      )}
+
       <Card title="提交评审" className="review-card" variant="borderless">
         <Form
-          form={form}
+          form={reviewForm}
           layout="vertical"
-          onFinish={(values) => mutation.mutate(values)}
+          onFinish={(values) => reviewMutation.mutate(values)}
           initialValues={{ reviewer_name: "interview-reviewer" }}
         >
           <Form.Item name="decision" label="结论" rules={[{ required: true }]}>
@@ -573,11 +780,37 @@ function AssetDetail({ asset, caseId }: { asset: Asset; caseId: string }) {
           <Form.Item name="reviewer_name" label="评审人" rules={[{ required: true }]}>
             <Input />
           </Form.Item>
-          <Button type="primary" htmlType="submit" loading={mutation.isPending} block>
+          <Button type="primary" htmlType="submit" loading={reviewMutation.isPending} block>
             保存评审
           </Button>
         </Form>
       </Card>
+
+      <Modal
+        title="添加结构标记"
+        open={pendingMarker !== null}
+        onCancel={() => {
+          setPendingMarker(null);
+          markerForm.resetFields();
+        }}
+        onOk={() => markerForm.submit()}
+        confirmLoading={addMarkerMutation.isPending}
+        destroyOnHidden
+      >
+        <Form
+          form={markerForm}
+          layout="vertical"
+          onFinish={(values) => {
+            if (pendingMarker) {
+              addMarkerMutation.mutate({ label: values.label, data: pendingMarker });
+            }
+          }}
+        >
+          <Form.Item name="label" label="结构名称" rules={[{ required: true }]}>
+            <Input placeholder="例如：主动脉瓣环" />
+          </Form.Item>
+        </Form>
+      </Modal>
     </div>
   );
 }
@@ -612,5 +845,3 @@ export function App() {
     </ConfigProvider>
   );
 }
-
-

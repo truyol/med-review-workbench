@@ -2,7 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 
 const project = { id: "project-1", name: "Demo Project", description: "演示" };
 const demoCase = { id: "case-1", project_id: "project-1", case_code: "DEMO-001", title: "素材评审" };
-const imageAsset = { id: "asset-1", case_id: "case-1", kind: "image", status: "pending", source_label: "IMAGE review asset", content_type: "image/png", size_bytes: 1024, sha256: "a".repeat(64), preview_available: true, metadata_summary: { format: "PNG", width: 16, height: 16 }, ingest_warnings: [] };
+const imageAsset = { id: "asset-1", case_id: "case-1", kind: "image", status: "pending", source_label: "IMAGE review asset", content_type: "image/png", size_bytes: 1024, sha256: "a".repeat(64), preview_available: true, metadata_summary: { format: "PNG", width: 16, height: 16 }, ingest_warnings: [], tags: [], note: null };
 
 const previewPng = Buffer.from(
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=",

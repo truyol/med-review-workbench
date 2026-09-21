@@ -30,7 +30,7 @@ describe("P5 workbench shell", () => {
       data: {
         case: { id: "case-1", project_id: "project-1", case_code: "P8", title: "Status mapping", created_at: "2026-09-21T00:00:00Z", updated_at: "2026-09-21T00:00:00Z" },
         assets: statuses.map((status, index) => ({
-          asset: { id: `asset-${index}`, case_id: "case-1", kind: "image", status, source_label: `Asset ${index}`, content_type: "image/png", size_bytes: 100, sha256: "a".repeat(64), preview_available: true, metadata_summary: {}, ingest_warnings: [], created_at: "2026-09-21T00:00:00Z", updated_at: "2026-09-21T00:00:00Z" },
+          asset: { id: `asset-${index}`, case_id: "case-1", kind: "image", status, source_label: `Asset ${index}`, content_type: "image/png", size_bytes: 100, sha256: "a".repeat(64), preview_available: true, metadata_summary: {}, ingest_warnings: [], tags: [], note: null, created_at: "2026-09-21T00:00:00Z", updated_at: "2026-09-21T00:00:00Z" },
           latest_review: null,
         })),
       },
